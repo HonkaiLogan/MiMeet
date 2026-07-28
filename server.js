@@ -8,6 +8,7 @@ const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
 const { initDB } = require('./db');
+const { startScheduler } = require('./scheduler');
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.get('/', (req, res) => {
 const PORT = parseInt(process.env.PORT || '5000');
 
 initDB().then(() => {
+  startScheduler();
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[MiMeet] 服务已启动: http://localhost:${PORT}`);
   });
