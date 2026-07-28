@@ -1,6 +1,6 @@
-# Mi搭子 - Meet你的命中搭子
+# MiMeet - Meet你的命中搭子
 
-基于 Xiaomi MiMo 的职场生活轻社交连接器
+基于 Xiaomi MiMo 的职场生活轻社交连接器，覆盖午餐拼桌、通勤拼车两大高频场景。
 
 ## 快速启动
 
@@ -19,10 +19,18 @@ python app.py
 # http://localhost:5000
 ```
 
+## 技术栈
+
+- **前端**：HTML5 + Tailwind CSS + 原生 JavaScript（SPA 单页应用）
+- **后端**：Python 3 + Flask
+- **数据库**：SQLite
+- **AI 引擎**：Xiaomi MiMo API
+- **登录**：飞书 OAuth 2.0
+
 ## 项目结构
 
 ```
-mi-dazi/
+MiMeet/
 ├── app.py              # Flask 主应用（路由、启动）
 ├── models.py           # 数据库模型（SQLite 表定义）
 ├── matching.py         # 匹配引擎（规则打分 + MiMo调用）
