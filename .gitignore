@@ -2,12 +2,8 @@
 .env
 .env.local
 
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-venv/
-.venv/
+# Node.js
+node_modules/
 
 # 数据库
 *.db

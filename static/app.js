@@ -47,9 +47,8 @@ function initHome() {
 
 // ========== 画像设置 ==========
 async function loadProfile() {
-    const data = await request('/api/profile');
+    const data = await request('/api/user/getProfile');
     if (data) {
-        // 回填表单
         document.getElementById('taste').value = data.taste_pref || '';
         document.getElementById('time-pref').value = data.time_pref || '';
         document.getElementById('location').value = data.location_pref || '';
@@ -66,7 +65,7 @@ async function saveProfile() {
         social_pref: document.getElementById('social-pref').value,
         interests: document.getElementById('interests').value,
     };
-    const data = await request('/api/profile', {
+    const data = await request('/api/user/saveProfile', {
         method: 'POST',
         body: JSON.stringify(params)
     });
@@ -80,7 +79,7 @@ async function doMatch(scene) {
     const container = document.getElementById('match-results');
     container.innerHTML = '<p class="text-center text-gray-400">正在匹配中...</p>';
 
-    const results = await request('/api/match', {
+    const results = await request('/api/match/execute', {
         method: 'POST',
         body: JSON.stringify({ scene })
     });
@@ -113,7 +112,7 @@ function inviteBuddy(candidateId) {
 
 // ========== 搭子广场 ==========
 async function loadSquare() {
-    const posts = await request('/api/square');
+    const posts = await request('/api/plaza/list');
     const container = document.getElementById('square-list');
 
     if (!posts || posts.length === 0) {
@@ -142,7 +141,7 @@ async function publishPost() {
         alert('请输入搭子需求');
         return;
     }
-    const data = await request('/api/square', {
+    const data = await request('/api/plaza/publish', {
         method: 'POST',
         body: JSON.stringify({
             scene: document.getElementById('post-scene').value,
@@ -163,7 +162,7 @@ function respondPost(postId) {
 
 // ========== 每日推荐 ==========
 async function loadDaily() {
-    const data = await request('/api/daily');
+    const data = await request('/api/daily/recommend');
     if (data) {
         document.getElementById('daily-content').innerHTML = `
             <div class="text-center">
