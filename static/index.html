@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi搭子 - Meet你的命中搭子</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none !important; }
+        .nav-item.active { color: #f97316; }
+        .nav-item.active svg { fill: #f97316; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-16">
+
+    <!-- ========== 首页 ========== -->
+    <div id="page-home" class="p-4">
+        <div class="text-center pt-8 pb-6">
+            <h1 class="text-3xl font-bold text-orange-500">Mi 搭子</h1>
+            <p class="text-gray-400 mt-2">Meet 你的命中搭子</p>
+        </div>
+        <div class="space-y-4 max-w-md mx-auto">
+            <button id="btn-lunch" class="w-full bg-white rounded-2xl p-6 shadow-sm text-left hover:shadow-md transition">
+                <div class="text-3xl mb-2">🍜</div>
+                <h2 class="text-xl font-bold">午餐拼桌</h2>
+                <p class="text-gray-400 text-sm mt-1">找到口味相投的饭搭子</p>
+            </button>
+            <button id="btn-commute" class="w-full bg-white rounded-2xl p-6 shadow-sm text-left hover:shadow-md transition">
+                <div class="text-3xl mb-2">🚗</div>
+                <h2 class="text-xl font-bold">通勤拼车</h2>
+                <p class="text-gray-400 text-sm mt-1">找到路线相近的拼车搭子</p>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========== 画像设置页 ========== -->
+    <div id="page-profile" class="p-4 hidden">
+        <h1 class="text-xl font-bold mb-4">🧑 设置我的画像</h1>
+        <div class="space-y-4 max-w-md mx-auto">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">口味偏好</label>
+                <input id="taste" type="text" placeholder="如：清淡、川菜、轻食" class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">就餐时间</label>
+                <input id="time-pref" type="text" placeholder="如：12:30" class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">常去食堂</label>
+                <input id="location" type="text" placeholder="如：B1食堂" class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">预算范围</label>
+                <input id="budget" type="text" placeholder="如：20-40元" class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">社交偏好</label>
+                <select id="social-pref" class="w-full border rounded-lg px-3 py-2">
+                    <option value="chat">想边吃边聊</option>
+                    <option value="quiet">安静吃饭</option>
+                    <option value="either">都可以</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">兴趣标签</label>
+                <input id="interests" type="text" placeholder="如：AI,产品,篮球" class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <button onclick="saveProfile()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold">
+                保存画像
+            </button>
+        </div>
+    </div>
+
+    <!-- ========== 匹配结果页 ========== -->
+    <div id="page-match" class="p-4 hidden">
+        <div class="flex items-center mb-4">
+            <button onclick="showPage('home')" class="text-gray-400 mr-2">← 返回</button>
+            <h1 class="text-xl font-bold">🎯 匹配结果</h1>
+        </div>
+        <div id="match-results" class="max-w-md mx-auto">
+            <p class="text-center text-gray-400">正在匹配中...</p>
+        </div>
+    </div>
+
+    <!-- ========== 搭子广场 ========== -->
+    <div id="page-square" class="p-4 hidden">
+        <h1 class="text-xl font-bold mb-4">📢 搭子广场</h1>
+        <div class="max-w-md mx-auto">
+            <!-- 发布表单 -->
+            <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
+                <select id="post-scene" class="w-full border rounded-lg px-3 py-2 mb-2 text-sm">
+                    <option value="lunch">🍜 午餐拼桌</option>
+                    <option value="commute">🚗 通勤拼车</option>
+                </select>
+                <input id="post-time" type="text" placeholder="期望时间（如 12:30）" class="w-full border rounded-lg px-3 py-2 mb-2 text-sm">
+                <textarea id="post-content" rows="2" placeholder="描述你的搭子需求..." class="w-full border rounded-lg px-3 py-2 mb-2 text-sm"></textarea>
+                <button onclick="publishPost()" class="w-full bg-orange-500 text-white py-2 rounded-lg text-sm font-bold">
+                    发布需求
+                </button>
+            </div>
+            <!-- 列表 -->
+            <div id="square-list"></div>
+        </div>
+    </div>
+
+    <!-- ========== 每日推荐 ========== -->
+    <div id="page-daily" class="p-4 hidden">
+        <h1 class="text-xl font-bold mb-4">🌟 每日幸运推荐</h1>
+        <div id="daily-content" class="bg-white rounded-2xl p-6 shadow-sm max-w-md mx-auto">
+            <p class="text-center text-gray-400">加载中...</p>
+        </div>
+    </div>
+
+    <!-- ========== 个人中心 ========== -->
+    <div id="page-mine" class="p-4 hidden">
+        <h1 class="text-xl font-bold mb-4">👤 个人中心</h1>
+        <div class="max-w-md mx-auto space-y-3">
+            <button onclick="showPage('profile')" class="w-full bg-white rounded-xl p-4 shadow-sm text-left">
+                📝 编辑我的画像
+            </button>
+            <button class="w-full bg-white rounded-xl p-4 shadow-sm text-left">
+                📊 历史匹配记录
+            </button>
+            <a href="/auth/login" class="block w-full bg-white rounded-xl p-4 shadow-sm text-left text-gray-700">
+                🔑 飞书登录
+            </a>
+        </div>
+    </div>
+
+    <!-- ========== 底部导航栏 ========== -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-2">
+        <button class="nav-item flex flex-col items-center text-xs text-gray-400 active" data-page="home">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2L2 8v10h6v-5h4v5h6V8L10 2z"/></svg>
+            首页
+        </button>
+        <button class="nav-item flex flex-col items-center text-xs text-gray-400" data-page="square">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm0 2h12v10H4V5z"/></svg>
+            广场
+        </button>
+        <button class="nav-item flex flex-col items-center text-xs text-gray-400" data-page="daily">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+            推荐
+        </button>
+        <button class="nav-item flex flex-col items-center text-xs text-gray-400" data-page="mine">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a4 4 0 100 8 4 4 0 000-8zm-7 14a7 7 0 0114 0H3z"/></svg>
+            我的
+        </button>
+    </nav>
+
+    <script src="app.js"></script>
+</body>
+</html>
