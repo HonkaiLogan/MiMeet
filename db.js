@@ -27,6 +27,8 @@ async function initDB() {
         feishu_id   VARCHAR(128) UNIQUE NOT NULL,
         nickname    VARCHAR(64),
         department  VARCHAR(128),
+        seat_number VARCHAR(64),
+        about_me    TEXT,
         avatar_url  VARCHAR(512),
         created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

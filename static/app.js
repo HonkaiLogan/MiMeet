@@ -6,6 +6,25 @@
 // ========== 统一请求封装 ==========
 const BASE_URL = window.location.origin;
 
+// ========== 飞书 JSAPI 初始化 ==========
+async function initFeishuSDK() {
+    try {
+        const config = await request('/api/feishu/jsapi-config');
+        if (config && window.h5sdk) {
+            window.h5sdk.config({
+                appId: config.appId,
+                timestamp: config.timestamp,
+                nonceStr: config.nonceStr,
+                signature: config.signature,
+                jsApiList: ['biz.util.share', 'biz.util.open'],
+            });
+        }
+    } catch (e) {
+        // 非飞书环境，忽略
+        console.log('飞书 JSAPI 初始化跳过:', e.message);
+    }
+}
+
 async function request(apiPath, options = {}) {
     const res = await fetch(`${BASE_URL}${apiPath}`, {
         headers: { 'Content-Type': 'application/json' },
@@ -105,9 +124,18 @@ async function doMatch(scene) {
     `).join('');
 }
 
-function inviteBuddy(candidateId) {
-    // TODO: 发送飞书消息邀请
-    alert('邀请已发送！');
+async function inviteBuddy(candidateId) {
+    const data = await request('/api/match/invite', {
+        method: 'POST',
+        body: JSON.stringify({
+            candidateId: Number(candidateId),
+            scene: 'lunch',
+            message: '一起呀~',
+        })
+    });
+    if (data !== null) {
+        alert('邀请已发送！');
+    }
 }
 
 // ========== 搭子广场 ==========
@@ -189,6 +217,7 @@ function timeAgo(dateStr) {
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
     initHome();
+    initFeishuSDK();
     showPage('home');
 
     // 底部导航

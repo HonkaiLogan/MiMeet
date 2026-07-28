@@ -30,6 +30,7 @@ app.use(require('./routes/match'));
 app.use(require('./routes/square'));
 app.use(require('./routes/daily'));
 app.use(require('./routes/utility'));
+app.use(require('./routes/feishu'));
 
 // 首页
 app.get('/', (req, res) => {
