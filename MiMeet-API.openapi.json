@@ -1,0 +1,751 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MiMeet - Mi搭子 API",
+    "description": "基于 Xiaomi MiMo 的职场生活轻社交连接器，覆盖午餐拼桌、通勤拼车两大高频场景。\n\n## 全局统一返回格式\n```json\n{\n  \"code\": 200,\n  \"msg\": \"文字提示\",\n  \"data\": {}\n}\n```\n| code | 含义 |\n|------|------|\n| 200 | 成功 |\n| 400 | 参数错误 |\n| 401 | 未登录 |\n| 500 | 服务异常 |",
+    "version": "1.0.0",
+    "contact": {
+      "name": "MiMeet 团队"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "本地开发环境"
+    }
+  ],
+  "tags": [
+    { "name": "认证", "description": "飞书 OAuth 登录" },
+    { "name": "用户画像", "description": "用户偏好设置" },
+    { "name": "匹配", "description": "AI 智能匹配" },
+    { "name": "搭子广场", "description": "广场发布与响应" },
+    { "name": "每日推荐", "description": "每日幸运推荐" },
+    { "name": "食堂与优惠", "description": "菜单、优惠、路线" },
+    { "name": "飞书", "description": "飞书 JSAPI 与消息" }
+  ],
+  "paths": {
+    "/auth/login": {
+      "get": {
+        "tags": ["认证"],
+        "summary": "飞书登录",
+        "description": "跳转飞书 OAuth 授权页，用户授权后自动回调。",
+        "responses": {
+          "302": {
+            "description": "重定向到飞书授权页"
+          }
+        }
+      }
+    },
+    "/auth/callback": {
+      "get": {
+        "tags": ["认证"],
+        "summary": "飞书 OAuth 回调",
+        "description": "飞书授权成功后的回调地址，自动获取用户信息并写入数据库，同时拉取通讯录（部门、工位、About Me）。",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "description": "飞书授权码",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "授权成功，重定向到首页"
+          },
+          "400": {
+            "description": "缺少授权码",
+            "content": {
+              "application/json": {
+                "example": { "code": 400, "msg": "缺少授权码", "data": null }
+              }
+            }
+          },
+          "500": {
+            "description": "登录失败",
+            "content": {
+              "application/json": {
+                "example": { "code": 500, "msg": "登录失败", "data": null }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/getProfile": {
+      "get": {
+        "tags": ["用户画像"],
+        "summary": "获取画像",
+        "description": "获取当前登录用户的画像信息。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": 200,
+                  "msg": "ok",
+                  "data": {
+                    "id": 1,
+                    "user_id": 1,
+                    "scene": "lunch",
+                    "taste_pref": "[\"清淡\",\"川菜\"]",
+                    "time_pref": "12:30",
+                    "location_pref": "B1食堂",
+                    "budget": "20-40元",
+                    "social_pref": "chat",
+                    "interests": "[\"AI\",\"产品\",\"篮球\"]",
+                    "commute_area": null,
+                    "commute_time": null,
+                    "transport": null
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "example": { "code": 401, "msg": "未登录", "data": null }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/saveProfile": {
+      "post": {
+        "tags": ["用户画像"],
+        "summary": "保存画像",
+        "description": "保存或更新当前用户的画像信息。口味和兴趣支持逗号分隔的字符串或数组。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scene": {
+                    "type": "string",
+                    "description": "场景：lunch=午餐, commute=通勤",
+                    "enum": ["lunch", "commute"],
+                    "default": "lunch"
+                  },
+                  "taste_pref": {
+                    "type": "string",
+                    "description": "口味偏好，逗号分隔",
+                    "example": "清淡,川菜,轻食"
+                  },
+                  "time_pref": {
+                    "type": "string",
+                    "description": "就餐/出发时间",
+                    "example": "12:30"
+                  },
+                  "location_pref": {
+                    "type": "string",
+                    "description": "常去食堂/出发地点",
+                    "example": "B1食堂"
+                  },
+                  "budget": {
+                    "type": "string",
+                    "description": "预算范围",
+                    "example": "20-40元"
+                  },
+                  "social_pref": {
+                    "type": "string",
+                    "description": "社交偏好",
+                    "enum": ["chat", "quiet", "either"],
+                    "example": "chat"
+                  },
+                  "interests": {
+                    "type": "string",
+                    "description": "兴趣标签，逗号分隔",
+                    "example": "AI,产品,篮球"
+                  },
+                  "commute_area": {
+                    "type": "string",
+                    "description": "通勤区域（通勤场景用）",
+                    "example": "西二旗"
+                  },
+                  "commute_time": {
+                    "type": "string",
+                    "description": "通勤时间（通勤场景用）",
+                    "example": "08:30"
+                  },
+                  "transport": {
+                    "type": "string",
+                    "description": "交通方式（通勤场景用）",
+                    "example": "地铁"
+                  }
+                }
+              },
+              "example": {
+                "scene": "lunch",
+                "taste_pref": "清淡,川菜,轻食",
+                "time_pref": "12:30",
+                "location_pref": "B1食堂",
+                "budget": "20-40元",
+                "social_pref": "chat",
+                "interests": "AI,产品,篮球"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "保存成功",
+            "content": {
+              "application/json": {
+                "example": { "code": 200, "msg": "保存成功", "data": null }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "example": { "code": 401, "msg": "未登录", "data": null }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/match/execute": {
+      "post": {
+        "tags": ["匹配"],
+        "summary": "发起匹配",
+        "description": "发起 AI 智能匹配，返回 Top3 推荐搭子。匹配流程：规则初筛（时间30分/地点25分/口味15分/兴趣15分/社交15分）→ MiMo 精排 → 破冰话术生成。结果同时写入匹配记录表。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scene": {
+                    "type": "string",
+                    "description": "匹配场景",
+                    "enum": ["lunch", "commute"],
+                    "default": "lunch"
+                  }
+                }
+              },
+              "example": { "scene": "lunch" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "匹配成功",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": 200,
+                  "msg": "ok",
+                  "data": [
+                    {
+                      "candidate_id": "5",
+                      "nickname": "张三",
+                      "avatar_url": "https://xxx.com/avatar.jpg",
+                      "score": 85,
+                      "reason": "你们都喜欢川菜，兴趣标签重合度很高",
+                      "commonTags": ["AI", "川菜"],
+                      "rule_score": 70,
+                      "match_id": 1,
+                      "icebreaker": {
+                        "inviteMessage": "嘿，中午一起去吃川菜吧！",
+                        "icebreakerTopics": ["最近在做的AI项目", "周末篮球局"]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请先填写画像",
+            "content": {
+              "application/json": {
+                "example": { "code": 400, "msg": "请先填写画像", "data": null }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录"
+          }
+        }
+      }
+    },
+    "/api/match/feedback": {
+      "post": {
+        "tags": ["匹配"],
+        "summary": "匹配反馈",
+        "description": "对匹配结果提交反馈（合适/不合适）。系统自动判断当前用户是匹配的哪一方。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["matchId", "rating"],
+                "properties": {
+                  "matchId": {
+                    "type": "integer",
+                    "description": "匹配记录 ID",
+                    "example": 1
+                  },
+                  "rating": {
+                    "type": "string",
+                    "description": "反馈评价",
+                    "enum": ["good", "bad"]
+                  }
+                }
+              },
+              "example": { "matchId": 1, "rating": "good" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "反馈已记录",
+            "content": {
+              "application/json": {
+                "example": { "code": 200, "msg": "反馈已记录", "data": null }
+              }
+            }
+          },
+          "400": {
+            "description": "参数错误",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "缺少参数": { "value": { "code": 400, "msg": "缺少参数", "data": null } },
+                  "记录不存在": { "value": { "code": 400, "msg": "匹配记录不存在", "data": null } },
+                  "无权操作": { "value": { "code": 400, "msg": "无权操作此匹配记录", "data": null } }
+                }
+              }
+            }
+          },
+          "401": { "description": "未登录" }
+        }
+      }
+    },
+    "/api/match/history": {
+      "get": {
+        "tags": ["匹配"],
+        "summary": "历史匹配记录",
+        "description": "获取当前用户的所有历史匹配记录，包含对方昵称、匹配分数、反馈状态。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": 200,
+                  "msg": "ok",
+                  "data": [
+                    {
+                      "id": 1,
+                      "user_a_id": 1,
+                      "user_b_id": 5,
+                      "scene": "lunch",
+                      "score": 85,
+                      "reason": "你们都喜欢川菜",
+                      "icebreaker": { "inviteMessage": "一起吃饭吧", "icebreakerTopics": ["AI"] },
+                      "feedback_a": "good",
+                      "feedback_b": null,
+                      "created_at": "2026-07-28T12:00:00.000Z",
+                      "partner_name": "张三",
+                      "my_feedback": "good"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "description": "未登录" }
+        }
+      }
+    },
+    "/api/match/invite": {
+      "post": {
+        "tags": ["匹配", "飞书"],
+        "summary": "一键邀请",
+        "description": "给匹配候选人发送飞书消息卡片邀请。消息卡片包含邀请人昵称、场景、留言，以及"查看详情"按钮。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["candidateId"],
+                "properties": {
+                  "candidateId": {
+                    "type": "integer",
+                    "description": "候选人用户 ID",
+                    "example": 5
+                  },
+                  "scene": {
+                    "type": "string",
+                    "description": "邀请场景",
+                    "enum": ["lunch", "commute"],
+                    "default": "lunch"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "邀请留言",
+                    "example": "中午一起吃饭呀~"
+                  }
+                }
+              },
+              "example": {
+                "candidateId": 5,
+                "scene": "lunch",
+                "message": "中午一起吃饭呀~"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "邀请已发送",
+            "content": {
+              "application/json": {
+                "example": { "code": 200, "msg": "邀请已发送", "data": null }
+              }
+            }
+          },
+          "400": {
+            "description": "候选人不存在",
+            "content": {
+              "application/json": {
+                "example": { "code": 400, "msg": "候选人不存在", "data": null }
+              }
+            }
+          },
+          "401": { "description": "未登录" }
+        }
+      }
+    },
+    "/api/plaza/list": {
+      "get": {
+        "tags": ["搭子广场"],
+        "summary": "搭子广场列表",
+        "description": "获取所有状态为 open 的搭子需求，按发布时间倒序排列。超过24小时的帖子会被定时任务自动过期。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": 200,
+                  "msg": "ok",
+                  "data": [
+                    {
+                      "id": 1,
+                      "user_id": 3,
+                      "scene": "lunch",
+                      "content": "有人一起吃B1的麻辣烫吗？12:30",
+                      "time_pref": "12:30",
+                      "status": "open",
+                      "created_at": "2026-07-28T10:00:00.000Z",
+                      "nickname": "李四",
+                      "avatar_url": "https://xxx.com/avatar.jpg"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plaza/publish": {
+      "post": {
+        "tags": ["搭子广场"],
+        "summary": "发布搭子需求",
+        "description": "在广场发布一条搭子需求，24小时后自动过期。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["content"],
+                "properties": {
+                  "scene": {
+                    "type": "string",
+                    "description": "场景",
+                    "enum": ["lunch", "commute"],
+                    "default": "lunch"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "需求描述",
+                    "example": "有人一起吃B1的麻辣烫吗？12:30"
+                  },
+                  "time_pref": {
+                    "type": "string",
+                    "description": "期望时间",
+                    "example": "12:30"
+                  }
+                }
+              },
+              "example": {
+                "scene": "lunch",
+                "content": "有人一起吃B1的麻辣烫吗？12:30",
+                "time_pref": "12:30"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "发布成功",
+            "content": {
+              "application/json": {
+                "example": { "code": 200, "msg": "发布成功", "data": null }
+              }
+            }
+          },
+          "401": { "description": "未登录" }
+        }
+      }
+    },
+    "/api/plaza/respond": {
+      "post": {
+        "tags": ["搭子广场", "飞书"],
+        "summary": "响应搭子需求",
+        "description": "响应广场上的一条搭子需求，系统自动给帖子作者发送飞书消息通知。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["postId"],
+                "properties": {
+                  "postId": {
+                    "type": "integer",
+                    "description": "帖子 ID",
+                    "example": 1
+                  }
+                }
+              },
+              "example": { "postId": 1 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "已响应",
+            "content": {
+              "application/json": {
+                "example": { "code": 200, "msg": "已响应，已通知对方", "data": null }
+              }
+            }
+          },
+          "400": {
+            "description": "帖子不存在",
+            "content": {
+              "application/json": {
+                "example": { "code": 400, "msg": "帖子不存在", "data": null }
+              }
+            }
+          },
+          "401": { "description": "未登录" }
+        }
+      }
+    },
+    "/api/daily/recommend": {
+      "get": {
+        "tags": ["每日推荐"],
+        "summary": "每日幸运推荐",
+        "description": "获取每日幸运推荐，包含社交指数、推荐食物、社交小贴士。当前为占位数据，后续接入 MiMo 生成。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": 200,
+                  "msg": "ok",
+                  "data": {
+                    "keywords": "社交指数 ★★★★★",
+                    "recommended_food": "推荐去B1吃轻食沙拉",
+                    "social_tip": "今天适合主动出击，找个饭搭子一起聊聊AI！"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/food/menu": {
+      "get": {
+        "tags": ["食堂与优惠"],
+        "summary": "食堂菜单",
+        "description": "获取园区食堂实时菜单。当前为占位数据，待接入米宴接口。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "example": { "code": 200, "msg": "ok", "data": [] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/food/offers": {
+      "get": {
+        "tags": ["食堂与优惠"],
+        "summary": "优惠信息",
+        "description": "获取园区周边优惠活动。当前为占位数据，待接入优惠屋接口。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "example": { "code": 200, "msg": "ok", "data": [] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/food/route": {
+      "get": {
+        "tags": ["食堂与优惠"],
+        "summary": "餐厅路线",
+        "description": "获取餐厅步行路线和时长。当前为占位数据，待接入地图API。",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "出发地",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "目的地",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "example": { "code": 200, "msg": "ok", "data": null }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/feishu/jsapi-config": {
+      "get": {
+        "tags": ["飞书"],
+        "summary": "JSAPI 配置",
+        "description": "获取飞书 JSAPI 初始化所需的签名配置，供前端 h5sdk.config() 使用。",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "当前页面 URL（用于签名），默认自动获取",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": 200,
+                  "msg": "ok",
+                  "data": {
+                    "appId": "cli_xxxxx",
+                    "timestamp": "1722153600",
+                    "nonceStr": "a1b2c3d4e5f6",
+                    "signature": "sha1hash..."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UnifiedResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "description": "状态码：200成功, 400参数错误, 401未登录, 500服务异常" },
+          "msg": { "type": "string", "description": "提示信息" },
+          "data": { "description": "返回数据" }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "scene": { "type": "string", "enum": ["lunch", "commute"] },
+          "taste_pref": { "type": "string", "description": "JSON 数组字符串" },
+          "time_pref": { "type": "string" },
+          "location_pref": { "type": "string" },
+          "budget": { "type": "string" },
+          "social_pref": { "type": "string", "enum": ["chat", "quiet", "either"] },
+          "interests": { "type": "string", "description": "JSON 数组字符串" },
+          "commute_area": { "type": "string" },
+          "commute_time": { "type": "string" },
+          "transport": { "type": "string" }
+        }
+      },
+      "MatchResult": {
+        "type": "object",
+        "properties": {
+          "candidate_id": { "type": "string" },
+          "nickname": { "type": "string" },
+          "avatar_url": { "type": "string" },
+          "score": { "type": "integer", "description": "MiMo 精排分数" },
+          "reason": { "type": "string", "description": "推荐理由" },
+          "commonTags": { "type": "array", "items": { "type": "string" } },
+          "rule_score": { "type": "integer", "description": "规则初筛分数" },
+          "match_id": { "type": "integer", "description": "匹配记录 ID" },
+          "icebreaker": {
+            "type": "object",
+            "properties": {
+              "inviteMessage": { "type": "string" },
+              "icebreakerTopics": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "SquarePost": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "scene": { "type": "string" },
+          "content": { "type": "string" },
+          "time_pref": { "type": "string" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "nickname": { "type": "string" },
+          "avatar_url": { "type": "string" }
+        }
+      }
+    }
+  }
+}
