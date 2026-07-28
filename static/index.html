@@ -120,12 +120,23 @@
             <button onclick="showPage('profile')" class="w-full bg-white rounded-xl p-4 shadow-sm text-left">
                 📝 编辑我的画像
             </button>
-            <button class="w-full bg-white rounded-xl p-4 shadow-sm text-left">
+            <button onclick="showPage('history'); loadHistory()" class="w-full bg-white rounded-xl p-4 shadow-sm text-left">
                 📊 历史匹配记录
             </button>
             <a href="/auth/login" class="block w-full bg-white rounded-xl p-4 shadow-sm text-left text-gray-700">
                 🔑 飞书登录
             </a>
+        </div>
+    </div>
+
+    <!-- ========== 历史匹配记录 ========== -->
+    <div id="page-history" class="p-4 hidden">
+        <div class="flex items-center mb-4">
+            <button onclick="showPage('mine')" class="text-gray-400 mr-2">← 返回</button>
+            <h1 class="text-xl font-bold">📊 历史匹配记录</h1>
+        </div>
+        <div id="history-list" class="max-w-md mx-auto">
+            <p class="text-center text-gray-400">加载中...</p>
         </div>
     </div>
 

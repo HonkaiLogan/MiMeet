@@ -86,7 +86,7 @@ async function ruleFilter(userId, scene) {
 }
 
 /**
- * 完整匹配流程：规则初筛 → MiMo 精排 → 返回 Top3
+ * 完整匹配流程：规则初筛 → MiMo 精排 → 破冰生成 → 写入匹配记录 → 返回 Top3
  */
 async function doMatch(userId, scene) {
   const candidates = await ruleFilter(userId, scene);
@@ -98,7 +98,8 @@ async function doMatch(userId, scene) {
   );
   if (myRows.length === 0) return candidates.slice(0, 3);
 
-  const mimoResults = await matchCandidates(myRows[0], candidates, scene);
+  const myProfile = myRows[0];
+  const mimoResults = await matchCandidates(myProfile, candidates, scene);
 
   // 合并规则分数和 MiMo 分数
   for (const r of mimoResults) {
@@ -111,7 +112,42 @@ async function doMatch(userId, scene) {
   }
 
   mimoResults.sort((a, b) => (b.score || 0) - (a.score || 0));
-  return mimoResults.slice(0, 3);
+  const top3 = mimoResults.slice(0, 3);
+
+  // 为每个匹配生成破冰话术 + 写入 matches 表
+  for (const r of top3) {
+    const candidateUserId = Number(r.candidate_id);
+    const candidateProfile = candidates.find(c => c.user_id === candidateUserId)?.profile;
+
+    // 生成破冰话术
+    let icebreaker = { inviteMessage: '一起呀~', icebreakerTopics: [] };
+    if (candidateProfile) {
+      try {
+        icebreaker = await generateIcebreaker(myProfile, candidateProfile, scene);
+      } catch (e) {
+        console.warn('破冰生成失败:', e.message);
+      }
+    }
+    r.icebreaker = icebreaker;
+
+    // 写入 matches 表
+    try {
+      const [insertResult] = await pool.query(`
+        INSERT INTO matches (user_a_id, user_b_id, scene, score, reason, icebreaker)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [
+        userId, candidateUserId, scene,
+        r.score || r.rule_score || 0,
+        r.reason || '',
+        JSON.stringify(icebreaker),
+      ]);
+      r.match_id = insertResult.insertId;
+    } catch (e) {
+      console.warn('写入匹配记录失败:', e.message);
+    }
+  }
+
+  return top3;
 }
 
 // --- 工具函数 ---

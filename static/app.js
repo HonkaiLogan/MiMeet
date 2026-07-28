@@ -39,7 +39,7 @@ async function request(apiPath, options = {}) {
 }
 
 // ========== 页面路由 ==========
-const pages = ['home', 'profile', 'match', 'square', 'daily', 'mine'];
+const pages = ['home', 'profile', 'match', 'square', 'daily', 'mine', 'history'];
 
 function showPage(pageId) {
     pages.forEach(id => {
@@ -108,7 +108,10 @@ async function doMatch(scene) {
         return;
     }
 
-    container.innerHTML = results.map((r, i) => `
+    container.innerHTML = results.map((r, i) => {
+        const icebreaker = r.icebreaker || {};
+        const topics = icebreaker.icebreakerTopics || [];
+        return `
         <div class="bg-white rounded-xl p-4 mb-3 shadow-sm">
             <div class="flex items-center mb-2">
                 <span class="text-lg font-bold">推荐${i + 1}：</span>
@@ -116,25 +119,53 @@ async function doMatch(scene) {
                 <span class="ml-auto text-orange-500 font-bold">匹配度 ${r.score || r.rule_score}%</span>
             </div>
             <p class="text-gray-600 text-sm mb-2">${r.reason || '你们有很多共同点！'}</p>
-            ${r.commonTags ? `<div class="flex flex-wrap gap-1">${r.commonTags.map(t => `<span class="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">${t}</span>`).join('')}</div>` : ''}
-            <button class="mt-3 w-full bg-orange-500 text-white py-2 rounded-lg text-sm" onclick="inviteBuddy('${r.candidate_id}')">
-                一键邀请
-            </button>
-        </div>
-    `).join('');
+            ${r.commonTags ? `<div class="flex flex-wrap gap-1 mb-2">${r.commonTags.map(t => `<span class="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">${t}</span>`).join('')}</div>` : ''}
+            ${topics.length > 0 ? `
+            <div class="bg-orange-50 rounded-lg p-3 mb-2">
+                <p class="text-xs text-orange-600 font-bold mb-1">💡 破冰话题</p>
+                <div class="flex flex-wrap gap-1">${topics.map(t => `<span class="bg-white text-orange-600 text-xs px-2 py-1 rounded-full border border-orange-200">${t}</span>`).join('')}</div>
+            </div>` : ''}
+            <div class="flex gap-2 mt-3">
+                <button class="flex-1 bg-orange-500 text-white py-2 rounded-lg text-sm" onclick="inviteBuddy('${r.candidate_id}', '${(icebreaker.inviteMessage || '一起呀~').replace(/'/g, "\\'")}')">
+                    一键邀请
+                </button>
+                <button class="px-3 py-2 rounded-lg text-sm border border-green-300 text-green-600" onclick="submitFeedback(this, ${r.match_id || 0}, 'good')">👍</button>
+                <button class="px-3 py-2 rounded-lg text-sm border border-gray-300 text-gray-500" onclick="submitFeedback(this, ${r.match_id || 0}, 'bad')">👎</button>
+            </div>
+        </div>`;
+    }).join('');
 }
 
-async function inviteBuddy(candidateId) {
+async function inviteBuddy(candidateId, message) {
     const data = await request('/api/match/invite', {
         method: 'POST',
         body: JSON.stringify({
             candidateId: Number(candidateId),
             scene: 'lunch',
-            message: '一起呀~',
+            message: message || '一起呀~',
         })
     });
     if (data !== null) {
         alert('邀请已发送！');
+    }
+}
+
+async function submitFeedback(btn, matchId, rating) {
+    if (!matchId) return;
+    const data = await request('/api/match/feedback', {
+        method: 'POST',
+        body: JSON.stringify({ matchId, rating })
+    });
+    if (data !== null) {
+        // 禁用同组按钮
+        const parent = btn.parentElement;
+        parent.querySelectorAll('button').forEach(b => {
+            if (b !== parent.querySelector('.bg-orange-500')) {
+                b.disabled = true;
+                b.classList.add('opacity-40');
+            }
+        });
+        btn.classList.remove('opacity-40');
     }
 }
 
@@ -183,9 +214,14 @@ async function publishPost() {
     }
 }
 
-function respondPost(postId) {
-    // TODO: 响应搭子需求
-    alert('已响应，等待对方确认！');
+async function respondPost(postId) {
+    const data = await request('/api/plaza/respond', {
+        method: 'POST',
+        body: JSON.stringify({ postId })
+    });
+    if (data !== null) {
+        alert('已响应，已通知对方！');
+    }
 }
 
 // ========== 每日推荐 ==========
@@ -201,6 +237,37 @@ async function loadDaily() {
             </div>
         `;
     }
+}
+
+// ========== 历史匹配记录 ==========
+async function loadHistory() {
+    const container = document.getElementById('history-list');
+    container.innerHTML = '<p class="text-center text-gray-400">加载中...</p>';
+
+    const rows = await request('/api/match/history');
+    if (!rows || rows.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400">暂无匹配记录</p>';
+        return;
+    }
+
+    container.innerHTML = rows.map(m => `
+        <div class="bg-white rounded-xl p-4 mb-3 shadow-sm">
+            <div class="flex items-center mb-1">
+                <span class="font-bold">${m.partner_name || '匿名用户'}</span>
+                <span class="ml-auto text-xs text-gray-400">${m.scene === 'lunch' ? '🍜 午餐' : '🚗 通勤'}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-orange-500 text-sm">匹配度 ${m.score || 0}%</span>
+                <span class="text-xs text-gray-400">${timeAgo(m.created_at)}</span>
+            </div>
+            ${m.reason ? `<p class="text-gray-500 text-xs mt-1">${m.reason}</p>` : ''}
+            <div class="mt-2 text-xs">
+                ${m.my_feedback === 'good' ? '<span class="text-green-500">👍 已标记合适</span>' :
+                  m.my_feedback === 'bad' ? '<span class="text-gray-400">👎 已标记不合适</span>' :
+                  '<span class="text-gray-300">未反馈</span>'}
+            </div>
+        </div>
+    `).join('');
 }
 
 // ========== 工具函数 ==========

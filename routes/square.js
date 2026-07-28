@@ -3,6 +3,7 @@
  */
 const express = require('express');
 const { pool } = require('../db');
+const { sendMessage, buildInviteCard } = require('../services/feishu');
 const router = express.Router();
 
 /** 获取搭子广场列表 */
@@ -46,6 +47,40 @@ router.post('/api/plaza/publish', async (req, res) => {
     res.json({ code: 200, msg: '发布成功', data: null });
   } catch (err) {
     console.error('发布需求错误:', err.message);
+    res.json({ code: 500, msg: '服务器异常', data: null });
+  }
+});
+
+/** 响应搭子需求 */
+router.post('/api/plaza/respond', async (req, res) => {
+  const user = req.session.user;
+  if (!user) return res.json({ code: 401, msg: '未登录', data: null });
+
+  const { postId } = req.body;
+  if (!postId) return res.json({ code: 400, msg: '缺少帖子 ID', data: null });
+
+  try {
+    // 查找帖子和作者
+    const [posts] = await pool.query(`
+      SELECT sp.*, u.feishu_id, u.nickname AS author_name
+      FROM square_posts sp
+      JOIN users u ON sp.user_id = u.id
+      WHERE sp.id = ?
+    `, [postId]);
+
+    if (posts.length === 0) {
+      return res.json({ code: 400, msg: '帖子不存在', data: null });
+    }
+
+    const post = posts[0];
+    const sceneLabel = post.scene === 'lunch' ? '🍜 午餐拼桌' : '🚗 通勤拼车';
+    const card = buildInviteCard(user.nickname, post.scene, `我对你发布的"${sceneLabel}"需求感兴趣！`);
+
+    await sendMessage(post.feishu_id, card);
+
+    res.json({ code: 200, msg: '已响应，已通知对方', data: null });
+  } catch (err) {
+    console.error('响应搭子错误:', err.message);
     res.json({ code: 500, msg: '服务器异常', data: null });
   }
 });
