@@ -112,25 +112,25 @@ async function doMatch(scene) {
         const icebreaker = r.icebreaker || {};
         const topics = icebreaker.icebreakerTopics || [];
         return `
-        <div class="bg-white rounded-xl p-4 mb-3 shadow-sm">
-            <div class="flex items-center mb-2">
-                <span class="text-lg font-bold">推荐${i + 1}：</span>
-                <span class="text-lg font-bold ml-1">${r.nickname || '匿名用户'}</span>
-                <span class="ml-auto text-orange-500 font-bold">匹配度 ${r.score || r.rule_score}%</span>
+        <div class="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center mb-3">
+                <span class="text-lg font-bold text-gray-800">推荐${i + 1}</span>
+                <span class="text-lg font-bold text-gray-800 ml-1">${r.nickname || '匿名用户'}</span>
+                <span class="ml-auto text-orange-500 font-bold text-lg">${r.score || r.rule_score}%</span>
             </div>
-            <p class="text-gray-600 text-sm mb-2">${r.reason || '你们有很多共同点！'}</p>
-            ${r.commonTags ? `<div class="flex flex-wrap gap-1 mb-2">${r.commonTags.map(t => `<span class="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">${t}</span>`).join('')}</div>` : ''}
+            <p class="text-gray-500 text-sm mb-3">${r.reason || '你们有很多共同点！'}</p>
+            ${r.commonTags ? `<div class="flex flex-wrap gap-1.5 mb-3">${r.commonTags.map(t => `<span class="bg-orange-100 text-orange-600 text-xs px-2.5 py-1 rounded-full">${t}</span>`).join('')}</div>` : ''}
             ${topics.length > 0 ? `
-            <div class="bg-orange-50 rounded-lg p-3 mb-2">
-                <p class="text-xs text-orange-600 font-bold mb-1">💡 破冰话题</p>
-                <div class="flex flex-wrap gap-1">${topics.map(t => `<span class="bg-white text-orange-600 text-xs px-2 py-1 rounded-full border border-orange-200">${t}</span>`).join('')}</div>
+            <div class="bg-orange-50 rounded-lg p-3 mb-3">
+                <p class="text-xs text-orange-600 font-bold mb-1.5">💡 破冰话题</p>
+                <div class="flex flex-wrap gap-1.5">${topics.map(t => `<span class="bg-white text-orange-600 text-xs px-2.5 py-1 rounded-full border border-orange-200">${t}</span>`).join('')}</div>
             </div>` : ''}
             <div class="flex gap-2 mt-3">
-                <button class="flex-1 bg-orange-500 text-white py-2 rounded-lg text-sm" onclick="inviteBuddy('${r.candidate_id}', '${(icebreaker.inviteMessage || '一起呀~').replace(/'/g, "\\'")}')">
+                <button class="flex-1 bg-orange-500 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-orange-600 transition" onclick="inviteBuddy('${r.candidate_id}', '${(icebreaker.inviteMessage || '一起呀~').replace(/'/g, "\\'")}')">
                     一键邀请
                 </button>
-                <button class="px-3 py-2 rounded-lg text-sm border border-green-300 text-green-600" onclick="submitFeedback(this, ${r.match_id || 0}, 'good')">👍</button>
-                <button class="px-3 py-2 rounded-lg text-sm border border-gray-300 text-gray-500" onclick="submitFeedback(this, ${r.match_id || 0}, 'bad')">👎</button>
+                <button class="px-3 py-2.5 rounded-lg text-sm border border-green-300 text-green-600 hover:bg-green-50 transition" onclick="submitFeedback(this, ${r.match_id || 0}, 'good')">👍</button>
+                <button class="px-3 py-2.5 rounded-lg text-sm border border-gray-300 text-gray-500 hover:bg-gray-50 transition" onclick="submitFeedback(this, ${r.match_id || 0}, 'bad')">👎</button>
             </div>
         </div>`;
     }).join('');
@@ -180,15 +180,15 @@ async function loadSquare() {
     }
 
     container.innerHTML = posts.map(p => `
-        <div class="bg-white rounded-xl p-4 mb-3 shadow-sm">
+        <div class="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition">
             <div class="flex items-center mb-2">
-                <span class="font-bold">${p.nickname || '匿名'}</span>
+                <span class="font-bold text-gray-800">${p.nickname || '匿名'}</span>
                 <span class="ml-auto text-gray-400 text-xs">${timeAgo(p.created_at)}</span>
             </div>
-            <p class="text-gray-700 mb-2">${p.content}</p>
+            <p class="text-gray-600 text-sm mb-3">${p.content}</p>
             <div class="flex items-center justify-between">
                 <span class="text-xs text-orange-500">${p.scene === 'lunch' ? '🍜 午餐' : '🚗 通勤'}</span>
-                <button class="text-orange-500 text-sm" onclick="respondPost(${p.id})">响应</button>
+                <button class="text-orange-500 text-sm font-medium hover:text-orange-600 transition" onclick="respondPost(${p.id})">响应 →</button>
             </div>
         </div>
     `).join('');
@@ -229,11 +229,11 @@ async function loadDaily() {
     const data = await request('/api/daily/recommend');
     if (data) {
         document.getElementById('daily-content').innerHTML = `
-            <div class="text-center">
-                <p class="text-2xl mb-2">♎</p>
-                <p class="text-lg font-bold mb-2">${data.keywords}</p>
+            <div class="text-center py-4">
+                <p class="text-4xl mb-4">♎</p>
+                <p class="text-xl font-bold text-gray-800 mb-3">${data.keywords}</p>
                 <p class="text-gray-600 mb-4">${data.recommended_food}</p>
-                <p class="text-orange-500 text-sm">${data.social_tip}</p>
+                <p class="text-orange-500 text-sm mt-2">${data.social_tip}</p>
             </div>
         `;
     }
@@ -251,18 +251,18 @@ async function loadHistory() {
     }
 
     container.innerHTML = rows.map(m => `
-        <div class="bg-white rounded-xl p-4 mb-3 shadow-sm">
-            <div class="flex items-center mb-1">
-                <span class="font-bold">${m.partner_name || '匿名用户'}</span>
+        <div class="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center mb-2">
+                <span class="font-bold text-gray-800">${m.partner_name || '匿名用户'}</span>
                 <span class="ml-auto text-xs text-gray-400">${m.scene === 'lunch' ? '🍜 午餐' : '🚗 通勤'}</span>
             </div>
-            <div class="flex items-center justify-between">
-                <span class="text-orange-500 text-sm">匹配度 ${m.score || 0}%</span>
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-orange-500 font-medium">匹配度 ${m.score || 0}%</span>
                 <span class="text-xs text-gray-400">${timeAgo(m.created_at)}</span>
             </div>
             ${m.reason ? `<p class="text-gray-500 text-xs mt-1">${m.reason}</p>` : ''}
-            <div class="mt-2 text-xs">
-                ${m.my_feedback === 'good' ? '<span class="text-green-500">👍 已标记合适</span>' :
+            <div class="mt-3 text-xs">
+                ${m.my_feedback === 'good' ? '<span class="text-green-500 font-medium">👍 已标记合适</span>' :
                   m.my_feedback === 'bad' ? '<span class="text-gray-400">👎 已标记不合适</span>' :
                   '<span class="text-gray-300">未反馈</span>'}
             </div>
