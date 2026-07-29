@@ -41,8 +41,10 @@ MiMeet/
 │   ├── match.js            # 匹配 API
 │   ├── square.js           # 搭子广场 API
 │   ├── daily.js            # 每日推荐 API
-│   └── utility.js          # 菜单/优惠/路线 API
+│   ├── utility.js          # 菜单/优惠/路线 API
+│   └── feishu.js           # 飞书 JSAPI + 邀请消息
 ├── services/
+│   ├── feishu.js           # 飞书 API（token/JSAPI/消息）
 │   ├── matching.js         # 匹配引擎（规则初筛 + MiMo精排）
 │   └── mimo.js             # MiMo API 封装
 ├── static/
@@ -61,9 +63,13 @@ MiMeet/
 | POST | /api/user/saveProfile | 保存画像 |
 | POST | /api/match/execute | 发起匹配 |
 | POST | /api/match/feedback | 匹配反馈 |
+| GET | /api/match/history | 历史匹配记录 |
+| POST | /api/match/invite | 一键邀请（发飞书消息） |
 | GET | /api/plaza/list | 搭子广场列表 |
 | POST | /api/plaza/publish | 发布需求 |
+| POST | /api/plaza/respond | 响应搭子需求 |
 | GET | /api/daily/recommend | 每日推荐 |
 | GET | /api/food/menu | 食堂菜单 |
 | GET | /api/food/offers | 优惠信息 |
 | GET | /api/food/route | 餐厅路线 |
+| GET | /api/feishu/jsapi-config | 飞书 JSAPI 配置 |
