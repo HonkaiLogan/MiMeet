@@ -2,7 +2,7 @@
  * 匹配引擎
  * 规则初筛（纯代码） + MiMo 精排
  */
-const { pool } = require('../db');
+const { pool } = require('../../database/db');
 const { matchCandidates, generateIcebreaker } = require('./mimo');
 
 /**

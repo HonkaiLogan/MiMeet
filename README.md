@@ -31,25 +31,30 @@ npm start
 
 ```
 MiMeet/
-├── server.js               # Express 主应用（路由、启动）
-├── db.js                   # MySQL 连接池 + 建表
+├── backend/                # 后端服务（Node.js + Express）
+│   ├── server.js           # 主应用（路由挂载、启动）
+│   ├── scheduler.js        # 定时任务（广场需求过期）
+│   ├── routes/             # HTTP 路由层
+│   │   ├── auth.js         # 飞书 OAuth 登录
+│   │   ├── profile.js      # 用户画像 API
+│   │   ├── match.js        # 匹配 API
+│   │   ├── square.js       # 搭子广场 API
+│   │   ├── daily.js        # 每日推荐 API
+│   │   ├── utility.js      # 菜单/优惠/路线 API
+│   │   └── feishu.js       # 飞书 JSAPI + 邀请消息
+│   └── services/           # 业务服务层
+│       ├── feishu.js       # 飞书 API（token/JSAPI/消息）
+│       ├── matching.js     # 匹配引擎（规则初筛 + MiMo精排）
+│       └── mimo.js         # MiMo API 封装
+├── database/               # 数据库层
+│   └── db.js               # MySQL 连接池 + 建表
+├── frontend/               # 前端（SPA）
+│   ├── index.html          # 主页面
+│   └── app.js              # 交互逻辑
+├── docs/                   # 接口文档
+│   └── MiMeet-API.openapi.json
 ├── package.json            # Node.js 依赖
 ├── .env.example            # 环境变量模板
-├── routes/
-│   ├── auth.js             # 飞书 OAuth 登录
-│   ├── profile.js          # 用户画像 API
-│   ├── match.js            # 匹配 API
-│   ├── square.js           # 搭子广场 API
-│   ├── daily.js            # 每日推荐 API
-│   ├── utility.js          # 菜单/优惠/路线 API
-│   └── feishu.js           # 飞书 JSAPI + 邀请消息
-├── services/
-│   ├── feishu.js           # 飞书 API（token/JSAPI/消息）
-│   ├── matching.js         # 匹配引擎（规则初筛 + MiMo精排）
-│   └── mimo.js             # MiMo API 封装
-├── static/
-│   ├── index.html          # 前端 SPA 主页面
-│   └── app.js              # 前端交互逻辑
 └── README.md               # 本文件
 ```
 

@@ -2,10 +2,10 @@
   "name": "mimeet",
   "version": "1.0.0",
   "description": "MiMeet - Meet你的命中搭子，基于 Xiaomi MiMo 的职场生活轻社交连接器",
-  "main": "server.js",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js"
   },
   "dependencies": {
     "axios": "^1.7.0",

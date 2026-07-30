@@ -79,7 +79,7 @@ router.get('/auth/callback', async (req, res) => {
     };
 
     // 写入/更新数据库
-    const { pool } = require('../db');
+    const { pool } = require('../../database/db');
     try {
       await pool.query(`
         INSERT INTO users (feishu_id, nickname, avatar_url, department, seat_number, about_me)

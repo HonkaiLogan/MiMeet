@@ -2,7 +2,7 @@
  * 用户画像 API
  */
 const express = require('express');
-const { pool } = require('../db');
+const { pool } = require('../../database/db');
 const router = express.Router();
 
 /** 获取当前用户画像 */

@@ -4,7 +4,7 @@
  * - 一键邀请发消息
  */
 const express = require('express');
-const { pool } = require('../db');
+const { pool } = require('../../database/db');
 const { getJsapiConfig, sendMessage, buildInviteCard } = require('../services/feishu');
 const router = express.Router();
 

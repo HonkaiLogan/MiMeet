@@ -7,7 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
-const { initDB } = require('./db');
+const { initDB } = require('../database/db');
 const { startScheduler } = require('./scheduler');
 
 const app = express();
@@ -22,7 +22,7 @@ app.use(session({
 }));
 
 // 静态文件
-app.use(express.static(path.join(__dirname, 'static')));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // ========== 路由 ==========
 app.use(require('./routes/auth'));
@@ -35,7 +35,7 @@ app.use(require('./routes/feishu'));
 
 // 首页
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'static', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
 
 // ========== 启动 ==========

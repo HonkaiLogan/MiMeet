@@ -2,7 +2,7 @@
  * 匹配 API
  */
 const express = require('express');
-const { pool } = require('../db');
+const { pool } = require('../../database/db');
 const { doMatch } = require('../services/matching');
 const router = express.Router();
 
