@@ -108,6 +108,8 @@ async function doMatch(scene) {
         return;
     }
 
+    const isCommute = scene === 'commute';
+
     container.innerHTML = results.map((r, i) => {
         const icebreaker = r.icebreaker || {};
         const topics = icebreaker.icebreakerTopics || [];
@@ -118,6 +120,7 @@ async function doMatch(scene) {
                 <span class="text-lg font-bold text-gray-800 ml-1">${r.nickname || '匿名用户'}</span>
                 <span class="ml-auto text-orange-500 font-bold text-lg">${r.score || r.rule_score}%</span>
             </div>
+            ${!isCommute && r.department ? `<p class="text-gray-400 text-xs mb-2">🏢 ${r.department}</p>` : ''}
             <p class="text-gray-500 text-sm mb-3">${r.reason || '你们有很多共同点！'}</p>
             ${r.commonTags ? `<div class="flex flex-wrap gap-1.5 mb-3">${r.commonTags.map(t => `<span class="bg-orange-100 text-orange-600 text-xs px-2.5 py-1 rounded-full">${t}</span>`).join('')}</div>` : ''}
             ${topics.length > 0 ? `

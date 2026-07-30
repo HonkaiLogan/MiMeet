@@ -6,7 +6,19 @@ const { pool } = require('../../database/db');
 const { matchCandidates, generateIcebreaker } = require('./mimo');
 
 /**
+ * 场景权重配置
+ * lunch:   侧重口味+社交  时间30/地点15/口味20/兴趣15/社交20
+ * commute: 侧重路线重合   时间35/地点35/口味0/兴趣15/社交15
+ */
+const WEIGHTS = {
+  lunch:   { time: 30, location: 15, taste: 20, interest: 15, social: 20 },
+  commute: { time: 35, location: 35, taste: 0,  interest: 15, social: 15 },
+};
+
+/**
  * 规则初筛：同场景 + 时间差≤30min + 排除自己，按规则分数排序取 Top10
+ * 通勤场景：隐藏部门信息，侧重路线重合度
+ * 午餐场景：侧重口味与社交偏好
  */
 async function ruleFilter(userId, scene) {
   const [myRows] = await pool.query(
@@ -16,8 +28,16 @@ async function ruleFilter(userId, scene) {
   if (myRows.length === 0) return [];
   const myProfile = myRows[0];
 
+  const w = WEIGHTS[scene] || WEIGHTS.lunch;
+  const isCommute = scene === 'commute';
+
+  // 通勤场景不查 department
+  const userFields = isCommute
+    ? 'u.nickname, u.avatar_url'
+    : 'u.nickname, u.department, u.avatar_url';
+
   const [candidates] = await pool.query(`
-    SELECT p.*, u.nickname, u.department, u.avatar_url
+    SELECT p.*, ${userFields}
     FROM profiles p
     JOIN users u ON p.user_id = u.id
     WHERE p.scene = ? AND p.user_id != ?
@@ -27,57 +47,61 @@ async function ruleFilter(userId, scene) {
   for (const c of candidates) {
     let score = 0;
 
-    // 时间匹配 (30分)
+    // 时间匹配
     if (myProfile.time_pref && c.time_pref) {
       const diff = timeDiffMinutes(myProfile.time_pref, c.time_pref);
       if (diff !== null) {
-        if (diff <= 15) score += 30;
-        else if (diff <= 30) score += 15;
+        if (diff <= 15) score += w.time;
+        else if (diff <= 30) score += Math.floor(w.time / 2);
         else continue; // 时间差>30min，排除
       } else {
-        score += 15;
+        score += Math.floor(w.time / 2);
       }
     }
 
-    // 地点/路线匹配 (25分)
+    // 地点/路线匹配（通勤场景权重更高）
     if (myProfile.location_pref && c.location_pref) {
-      if (myProfile.location_pref === c.location_pref) score += 25;
-      else score += 10;
+      if (myProfile.location_pref === c.location_pref) score += w.location;
+      else score += Math.floor(w.location / 3);
     }
 
-    // 口味匹配 (15分)
-    const myTaste = parseJSON(myProfile.taste_pref, []);
-    const cTaste = parseJSON(c.taste_pref, []);
-    if (myTaste.length && cTaste.length) {
-      const overlap = myTaste.filter(t => cTaste.includes(t));
-      if (overlap.length === myTaste.length) score += 15;
-      else if (overlap.length > 0) score += 8;
+    // 口味匹配（通勤场景跳过）
+    if (w.taste > 0) {
+      const myTaste = parseJSON(myProfile.taste_pref, []);
+      const cTaste = parseJSON(c.taste_pref, []);
+      if (myTaste.length && cTaste.length) {
+        const overlap = myTaste.filter(t => cTaste.includes(t));
+        if (overlap.length === myTaste.length) score += w.taste;
+        else if (overlap.length > 0) score += Math.floor(w.taste / 2);
+      }
     }
 
-    // 兴趣标签匹配 (15分)
+    // 兴趣标签匹配
     const myInterests = parseJSON(myProfile.interests, []);
     const cInterests = parseJSON(c.interests, []);
     if (myInterests.length && cInterests.length) {
       const common = myInterests.filter(t => cInterests.includes(t));
       const total = [...new Set([...myInterests, ...cInterests])];
-      if (total.length > 0) score += Math.floor(common.length / total.length * 15);
+      if (total.length > 0) score += Math.floor(common.length / total.length * w.interest);
     }
 
-    // 社交偏好匹配 (15分)
+    // 社交偏好匹配
     if (myProfile.social_pref && c.social_pref) {
-      if (myProfile.social_pref === c.social_pref) score += 15;
-      else score += 8;
+      if (myProfile.social_pref === c.social_pref) score += w.social;
+      else score += Math.floor(w.social / 2);
     }
 
     if (score > 0) {
-      results.push({
+      const entry = {
         user_id: c.user_id,
         nickname: c.nickname,
-        department: c.department,
         avatar_url: c.avatar_url,
         rule_score: score,
         profile: c,
-      });
+      };
+      // 只有午餐场景才返回部门信息
+      if (!isCommute) entry.department = c.department;
+      results.push(entry);
     }
   }
 
