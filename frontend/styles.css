@@ -1,0 +1,646 @@
+/* Mi搭子 - 完整样式表 */
+
+/* ============ 基础样式 ============ */
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============ 布局工具 ============ */
+.pt-18 { padding-top: 72px; }
+.pb-20 { padding-bottom: 80px; }
+.hidden { display: none !important; }
+
+/* ============ 颜色变量 ============ */
+:root {
+  --primary: #FF6700;
+  --primary-light: #FFF5F0;
+  --primary-dark: #E55D00;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --bg-primary: #F8F9FA;
+  --bg-card: #FFFFFF;
+  --border-color: #E5E7EB;
+}
+
+/* ============ Tab栏样式 ============ */
+.tab-item {
+  color: #9CA3AF;
+  transition: color 0.2s ease;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab-item.active {
+  color: var(--primary);
+}
+
+.tab-item.active svg {
+  fill: currentColor;
+}
+
+.tab-item:not(.active) svg {
+  fill: none;
+}
+
+/* ============ 卡片样式 ============ */
+.card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+}
+
+.card-appear {
+  animation: cardAppear 0.3s ease-out;
+}
+
+.card-appear:nth-child(1) { animation-delay: 0s; }
+.card-appear:nth-child(2) { animation-delay: 0.1s; }
+.card-appear:nth-child(3) { animation-delay: 0.2s; }
+
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============ 按钮样式 ============ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.btn-secondary:hover {
+  background: var(--primary-light);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+  background: #F3F4F6;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-lg {
+  height: 48px;
+  font-size: 16px;
+}
+
+.btn-sm {
+  height: 36px;
+  font-size: 14px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============ 标签样式 ============ */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tag-orange {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.tag-orange.selected {
+  background: var(--primary);
+  color: white;
+}
+
+.tag-blue {
+  background: #EFF6FF;
+  color: #3B82F6;
+}
+
+.tag-blue.selected {
+  background: #3B82F6;
+  color: white;
+}
+
+.tag-green {
+  background: #F0FDF4;
+  color: var(--success);
+}
+
+.tag-gray {
+  background: #F3F4F6;
+  color: var(--text-secondary);
+}
+
+/* ============ 输入框样式 ============ */
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255, 103, 0, 0.1);
+}
+
+.input::placeholder {
+  color: #9CA3AF;
+}
+
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* ============ 头像样式 ============ */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+.avatar-lg {
+  width: 64px;
+  height: 64px;
+  font-size: 24px;
+}
+
+.avatar-xl {
+  width: 80px;
+  height: 80px;
+  font-size: 32px;
+}
+
+.avatar-orange {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.avatar-blue {
+  background: #EFF6FF;
+  color: #3B82F6;
+}
+
+.avatar-green {
+  background: #F0FDF4;
+  color: var(--success);
+}
+
+.avatar-purple {
+  background: #F5F3FF;
+  color: #8B5CF6;
+}
+
+/* ============ 匹配分数样式 ============ */
+.match-score {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.match-score-lg {
+  font-size: 32px;
+}
+
+.match-score-blue {
+  color: #3B82F6;
+}
+
+/* ============ 信息网格 ============ */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.info-item {
+  text-align: center;
+  padding: 8px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.info-value-green {
+  color: var(--success);
+}
+
+/* ============ 列表项样式 ============ */
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.list-item + .list-item {
+  margin-top: 8px;
+}
+
+/* ============ 空状态 ============ */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ============ 加载状态 ============ */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #F3F4F6;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%);
+  background-size: 200% 100%;
+  animation: skeleton 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============ Toast样式 ============ */
+.toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 9999;
+  max-width: 80%;
+  text-align: center;
+  transition: opacity 0.3s ease;
+}
+
+/* ============ 弹窗样式 ============ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 16px;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* ============ 页面切换动画 ============ */
+.page-enter {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============ 点击反馈 ============ */
+.pressable {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.pressable:active {
+  transform: scale(0.97);
+  opacity: 0.8;
+}
+
+/* ============ 分割线 ============ */
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 12px 0;
+}
+
+/* ============ 徽章 ============ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--error);
+  color: white;
+}
+
+/* ============ 安全区域 ============ */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ============ 滚动条 ============ */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+/* ============ 文本溢出 ============ */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============ 路由切换动画 ============ */
+/* 用在 #app 容器本身，只做透明度变化，避免 transform 在动画期间
+   把内部 fixed 定位的导航栏/底部tab变成"相对该容器定位"，从而跳动 */
+.route-fade {
+  animation: routeFade 0.25s ease-out;
+}
+
+@keyframes routeFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============ 骨架屏列表（配合 skeleton 使用） ============ */
+.skeleton-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.skeleton-line {
+  height: 12px;
+  margin-bottom: 8px;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ============ 下拉刷新指示器 ============ */
+.pull-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  transition: height 0.2s ease;
+}
+
+.pull-indicator .spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+  margin-right: 6px;
+}
+
+/* ============ 星级/满意度评分（反馈弹窗） ============ */
+.rate-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rate-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.rate-option .rate-emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.rate-option .rate-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.rate-option.selected .rate-label {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ============ 表单校验提示 ============ */
+.field-error {
+  font-size: 12px;
+  color: var(--error);
+  margin-top: 6px;
+  display: none;
+}
+
+.field-error.show {
+  display: block;
+}
+
+.input.invalid,
+.textarea.invalid {
+  border-color: var(--error);
+}
+
+/* ============ icon-btn 通用图标按钮 ============ */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============ 响应式适配 ============ */
+/* 小屏手机（iPhone SE 等窄屏设备）*/
+@media (max-width: 375px) {
+  .page-padding,
+  main.max-w-md {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  h1 { font-size: 20px; }
+  h2 { font-size: 18px; }
+
+  .match-score { font-size: 20px; }
+  .match-score-lg { font-size: 26px; }
+
+  .avatar-lg { width: 56px; height: 56px; font-size: 20px; }
+  .avatar-xl { width: 68px; height: 68px; font-size: 26px; }
+}
+
+/* 大屏手机 / 平板宽度，居中限制内容宽度，避免拉得过宽 */
+@media (min-width: 428px) {
+  .max-w-md { max-width: 428px; }
+}
