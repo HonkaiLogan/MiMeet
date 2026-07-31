@@ -8,6 +8,41 @@
 // ============ 配置 ============
 const BASE_URL = "http://localhost:3000";
 const APP_CONFIG = { appName: "Mi搭子", version: "1.0.0", maxTasteCount: 3, maxInterestCount: 5 };
+const AVATARS = {
+  '小米同学': './assets/avatar-01.jpg',
+  '吴同学': './assets/avatar-02.jpg',
+  '李同学': './assets/avatar-03.jpg',
+  '王同学': './assets/avatar-04.jpg',
+  '刘同学': './assets/avatar-05.jpg',
+  '陈同学': './assets/avatar-06.jpg',
+  '黄同学': './assets/avatar-05.jpg',
+  '赵同学': './assets/avatar-06.jpg',
+  '周同学': './assets/avatar-03.jpg',
+  '张同学': './assets/avatar-02.jpg'
+};
+
+function avatarImg(name, cls = '') {
+  const src = AVATARS[name] || AVATARS['小米同学'];
+  return `<img src="${src}" alt="${name}头像" class="avatar-photo ${cls}">`;
+}
+
+function hydrateAvatarPhotos(root = document) {
+  root.querySelectorAll('p').forEach(text => {
+    if (text.textContent === '产品部 · 入职1年') text.textContent = '人力资源部 · 入职1年';
+  });
+  const labels = root.querySelectorAll('h2, h3, p');
+  labels.forEach(label => {
+    const name = Object.keys(AVATARS).find(candidate => label.textContent.includes(candidate));
+    if (!name) return;
+    const row = label.closest('.flex.items-center');
+    const holder = row && row.querySelector('.rounded-full');
+    if (holder && !holder.querySelector('img')) holder.innerHTML = avatarImg(name);
+  });
+  const ownAvatar = document.getElementById('user-avatar');
+  if (ownAvatar && !ownAvatar.querySelector('img')) ownAvatar.innerHTML = avatarImg('小米同学');
+  const navAvatar = document.getElementById('user-avatar-text');
+  if (navAvatar && !navAvatar.querySelector('img')) navAvatar.innerHTML = avatarImg('小米同学');
+}
 
 // 选项数据
 const TASTE_OPTIONS = [
@@ -171,7 +206,7 @@ const LoginPage = {
       const btn = document.getElementById('login-btn');
       setButtonLoading(btn, '登录中...');
       setTimeout(() => {
-        setStorage('userInfo', { userId: 'u001', nickname: '小米同学', department: '产品部', joinDate: '2025-07-01' });
+        setStorage('userInfo', { userId: 'u001', nickname: '小米同学', department: '中国区-新零售部', joinDate: '2025-07-01' });
         showToast('登录成功');
         setTimeout(() => Router.navigateTo(getStorage('userProfile') ? '/home' : '/profile-init'), 500);
       }, 1000);
@@ -260,9 +295,9 @@ const MatchLunchPage = {
   },
   async loadResults() {
     const mock = this.forceEmpty ? [] : [
-      { uid: 'u002', name: '吴同学', dept: '产品部 · 入职1年', score: 92, tags: ['清淡口味', '12:30午餐', 'AI爱好者'], reason: '你们都偏好清淡口味，午餐时间都在12:30左右，而且都对AI工具感兴趣，适合一起轻松交流。' },
-      { uid: 'u003', name: '李同学', dept: '技术部 · 入职2年', score: 85, tags: ['米饭爱好者', '12:00午餐'], reason: '你们午餐时间一致，都对产品设计感兴趣，可以边吃边聊。' },
-      { uid: 'u004', name: '王同学', dept: '设计部 · 入职3个月', score: 78, tags: ['轻食爱好者', '想认识新朋友'], reason: '你们都喜欢轻食，而且都希望认识新朋友，适合一起探索新餐厅。' }
+      { uid: 'u002', name: '吴同学', dept: '人力资源部 · 入职1年', score: 92, tags: ['清淡口味', '12:30午餐', 'AI爱好者'], reason: '你们都偏好清淡口味，午餐时间都在12:30左右，而且都对AI工具感兴趣，适合一起轻松交流。' },
+      { uid: 'u003', name: '李同学', dept: '手机部-硬件工程部 · 入职2年', score: 85, tags: ['米饭爱好者', '12:00午餐'], reason: '你们午餐时间一致，都对产品设计感兴趣，可以边吃边聊。' },
+      { uid: 'u004', name: '王同学', dept: '手机部-新业务部 · 入职3个月', score: 78, tags: ['轻食爱好者', '想认识新朋友'], reason: '你们都喜欢轻食，而且都希望认识新朋友，适合一起探索新餐厅。' }
     ];
     setTimeout(() => {
       document.getElementById('loading').classList.add('hidden');
@@ -382,9 +417,13 @@ const ProfilePage = {
   init() {
     const u = getStorage('userInfo');
     if (!u) { Router.navigateTo('/login'); return; }
+    if (!u.department || u.department === '产品部') {
+      u.department = '中国区-新零售部';
+      setStorage('userInfo', u);
+    }
     if (u.nickname) document.getElementById('user-avatar').textContent = u.nickname.charAt(0);
     document.getElementById('user-name').textContent = u.nickname || '小米同学';
-    document.getElementById('user-dept').textContent = u.department || '产品部';
+    document.getElementById('user-dept').textContent = u.department || '中国区-新零售部';
     document.getElementById('back-btn').addEventListener('click', () => Router.back());
     document.getElementById('edit-btn').addEventListener('click', () => showToast('编辑功能开发中'));
     document.getElementById('view-buddy-btn').addEventListener('click', (e) => showFeedbackModal({ name: e.currentTarget.dataset.name || '搭子', matchId: 'm001' }));
@@ -524,6 +563,8 @@ function showFeedbackModal(info) {
 
 // ============ 应用初始化 ============
 document.addEventListener('DOMContentLoaded', function() {
+  const avatarObserver = new MutationObserver(() => hydrateAvatarPhotos());
+  avatarObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
   Router.register('/login', () => renderPage(LoginPage));
   Router.register('/home', () => renderPage(HomePage));
   Router.register('/profile-init', () => renderPage(ProfileInitPage));
@@ -543,5 +584,8 @@ function renderPage(page, params = {}) {
   void app.offsetWidth; // 强制重排，确保动画能重新触发
   app.innerHTML = page.render(params);
   app.classList.add('route-fade');
-  setTimeout(() => page.init(params), 0);
+  setTimeout(() => {
+    page.init(params);
+    hydrateAvatarPhotos(app);
+  }, 0);
 }

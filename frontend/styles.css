@@ -267,6 +267,34 @@ body {
   color: #8B5CF6;
 }
 
+.avatar-photo,
+.cover-logo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.avatar-photo {
+  border-radius: 50%;
+}
+
+.rounded-full > span:has(.avatar-photo) {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 登录封面使用 Mi Meet 品牌图 */
+.text-center.mb-12 > .w-20.h-20 {
+  background: url("./assets/mi-meet-cover.jpg") center / cover no-repeat;
+  overflow: hidden;
+}
+
+.text-center.mb-12 > .w-20.h-20 > svg {
+  display: none;
+}
+
 /* ============ 匹配分数样式 ============ */
 .match-score {
   font-size: 24px;
