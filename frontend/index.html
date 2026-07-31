@@ -6,12 +6,30 @@
   <meta name="theme-color" content="#FF6700">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Mi搭子</title>
+  <meta name="description" content="Mi搭子 - 小米人全场景社交匹配平台，Meet 你的命中搭子">
+  <meta name="keywords" content="小米,社交,搭子,拼车,午餐">
+  <link rel="icon" href="./assets/favicon.ico" type="image/x-icon">
+  <title>Mi搭子 | Meet 你的命中搭子</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="./styles.css">
+  <style>
+    /* 基础样式 */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* 手机端全屏 */
+    #app {
+      width: 100%;
+      min-height: 100vh;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 min-h-screen safe-bottom">
   <div id="app"></div>
+  <script src="./mock-data.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
