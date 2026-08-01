@@ -17,6 +17,17 @@ function getAvatarSrc(nameOrId) {
     const byName = Object.values(MOCK_USERS).find(u => u.nickname === nameOrId);
     if (byName) return byName.avatar;
   }
+  // 三批演示候选人分别使用头像 1-9 和 11-19。
+  const demoId = Number(nameOrId);
+  if (Number.isFinite(demoId) && demoId >= 101 && demoId <= 209) {
+    const avatarNo = demoId >= 200 ? demoId - 190 : demoId - 100;
+    return `./assets/avatars/${avatarNo === 10 ? '10.png' : `${avatarNo}.jpg`}`;
+  }
+  if (typeof MatchLunchPage !== 'undefined' && typeof MatchCommutePage !== 'undefined') {
+    const demoCandidate = [...MatchLunchPage.demoBatches.flat(), ...MatchCommutePage.demoBatches.flat()]
+      .find(candidate => candidate.nickname === nameOrId);
+    if (demoCandidate) return getAvatarSrc(demoCandidate.candidate_id);
+  }
   return './assets/avatars/28.jpg';
 }
 
@@ -32,6 +43,9 @@ function hydrateAvatarPhotos(root = document) {
   const allNicknames = typeof MOCK_USERS !== 'undefined'
     ? Object.values(MOCK_USERS).map(u => u.nickname)
     : [];
+  if (typeof MatchLunchPage !== 'undefined' && typeof MatchCommutePage !== 'undefined') {
+    allNicknames.push(...MatchLunchPage.demoBatches.flat().map(u => u.nickname), ...MatchCommutePage.demoBatches.flat().map(u => u.nickname));
+  }
   const labels = root.querySelectorAll('h2, h3, p');
   labels.forEach(label => {
     const name = allNicknames.find(candidate => label.textContent.includes(candidate));
@@ -658,6 +672,11 @@ const Router = {
 
 // ============ 首页 ============
 const HomePage = {
+  recommendations: [
+    { text: '今日适合主动出击！推荐你找一个同样喜欢川菜的饭搭子，中午一起去吃热乎乎的麻辣香锅。', tag: '🌶️ 今日宜吃辣' },
+    { text: '午后的灵感来自一顿轻松的午餐，约上同样爱产品和摄影的同事聊聊新鲜事吧。', tag: '📷 今日宜分享' },
+    { text: '今天的好运在通勤路上，找一位路线相近的搭子，早高峰也能变得从容。', tag: '🚗 今日宜同行' },
+  ],
   render() {
     return `<div class="bg-gray-50 min-h-screen pb-20"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><h1 class="text-lg font-semibold text-gray-900">Mi搭子</h1><div class="flex items-center space-x-3"><button class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></button><button id="avatar-btn" class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center"><span id="user-avatar-text" class="text-sm font-medium text-orange-600">小</span></button></div></div></nav><main class="max-w-md mx-auto px-4 pt-18 pb-4 space-y-4"><div class="shimmer-card bg-gradient-to-r from-orange-500 to-orange-400 rounded-xl p-4 text-white shadow-md"><div class="flex items-center justify-between mb-2"><span class="text-sm opacity-90">🔮 今日推荐</span><button id="refresh-rec" class="text-sm opacity-90 hover:opacity-100">换一个</button></div><p id="rec-text" class="text-base mb-3 leading-relaxed">"今日适合主动出击！推荐你找一个同样喜欢川菜的饭搭子，中午一起去吃热乎乎的麻辣香锅。"</p><div class="flex items-center justify-between"><span id="fun-tag" class="inline-flex items-center px-2 py-1 bg-white/20 rounded-full text-xs">🌶️ 今日宜吃辣</span><button id="view-rec" class="pressable text-sm font-medium hover:underline">去看看 →</button></div></div><div class="grid grid-cols-2 gap-3"><a href="#/match-lunch" class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow"><div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-3">${ICONS.bowl('w-6 h-6 text-orange-500')}</div><h3 class="text-base font-semibold text-gray-900 mb-1">找饭搭子</h3><p id="home-lunch-desc" class="text-xs text-gray-500">12:00 想找清淡饭搭子</p></a><a href="#/match-commute" class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow"><div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3">${ICONS.car('w-6 h-6 text-blue-500')}</div><h3 class="text-base font-semibold text-gray-900 mb-1">找拼车搭子</h3><p id="home-commute-desc" class="text-xs text-gray-500">8:30 回龙观到科技园</p></a></div><div class="grid grid-cols-2 gap-3"><a href="#/menu" class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow"><div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-3"><span class="text-2xl">🍱</span></div><h3 class="text-base font-semibold text-gray-900 mb-1">今日菜单</h3><p class="text-xs text-gray-500">三层食堂实时菜品</p></a><a href="#/daily" class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow"><div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3"><span class="text-2xl">🔮</span></div><h3 class="text-base font-semibold text-gray-900 mb-1">玄学抽卡</h3><p class="text-xs text-gray-500">今日幸运菜系 · 星座运势</p></a></div><div class="bg-white rounded-xl shadow-sm p-4"><div class="flex items-center justify-between mb-3"><h3 class="text-base font-semibold text-gray-900">📢 搭子广场</h3><a href="#/square" class="text-sm text-orange-500">查看全部</a></div><div id="square-preview" class="space-y-3"><div class="flex items-center justify-center py-4"><div class="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div></div></div></div></main><nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"><div class="max-w-md mx-auto px-4 h-16 flex items-center justify-around"><a href="#/home" class="flex flex-col items-center space-y-1 tab-item active"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="text-xs font-medium">首页</span></a><a href="#/square" class="flex flex-col items-center space-y-1 tab-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span class="text-xs">广场</span></a><a href="#/profile" class="flex flex-col items-center space-y-1 tab-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg><span class="text-xs">我的</span></a></div></nav></div>`;
   },
@@ -680,7 +699,13 @@ const HomePage = {
     if (cp) {
       document.getElementById('home-commute-desc').textContent = `${cp.departureTime || '8:30'} ${cp.homeArea || '回龙观'}到科技园`;
     }
-    document.getElementById('refresh-rec').addEventListener('click', () => showToast('已刷新推荐'));
+    this.recommendationIndex = 0;
+    document.getElementById('refresh-rec').addEventListener('click', () => {
+      this.recommendationIndex = (this.recommendationIndex + 1) % this.recommendations.length;
+      const rec = this.recommendations[this.recommendationIndex];
+      document.getElementById('rec-text').textContent = `"${rec.text}"`;
+      document.getElementById('fun-tag').textContent = rec.tag;
+    });
     document.getElementById('view-rec').addEventListener('click', () => Router.navigateTo('/daily'));
     document.getElementById('avatar-btn').addEventListener('click', () => Router.navigateTo('/profile'));
 
@@ -875,6 +900,23 @@ const LoginPage = {
 
 // ============ 午餐匹配页 ============
 const MatchLunchPage = {
+  demoBatches: [
+    [
+      { candidate_id: 101, nickname: '林晓', department: '产品部', score: 96, commonTags: ['川菜', '摄影'], reason: '口味和午餐时间都很合拍' },
+      { candidate_id: 102, nickname: '陈默', department: '研发部', score: 92, commonTags: ['清淡', 'AI'], reason: '都偏爱安静轻松的午餐氛围' },
+      { candidate_id: 103, nickname: '周可', department: '设计部', score: 89, commonTags: ['日料', '旅行'], reason: '预算相近，还有不少共同话题' },
+    ],
+    [
+      { candidate_id: 104, nickname: '苏然', department: '市场部', score: 94, commonTags: ['粤菜', '跑步'], reason: '用餐地点近，时间完全一致' },
+      { candidate_id: 105, nickname: '顾言', department: '运营部', score: 90, commonTags: ['面食', '电影'], reason: '都喜欢边吃边聊最近的电影' },
+      { candidate_id: 106, nickname: '唐宁', department: '财务部', score: 87, commonTags: ['轻食', '健身'], reason: '健康饮食偏好高度一致' },
+    ],
+    [
+      { candidate_id: 107, nickname: '沈一', department: '法务部', score: 95, commonTags: ['湘菜', '音乐'], reason: '都想尝试园区新开的湘菜馆' },
+      { candidate_id: 108, nickname: '叶青', department: '人力资源部', score: 91, commonTags: ['素食', '阅读'], reason: '午餐节奏和社交偏好很接近' },
+      { candidate_id: 109, nickname: '许星', department: '销售部', score: 88, commonTags: ['烧烤', '游戏'], reason: '兴趣相投，午餐一定不会冷场' },
+    ],
+  ],
   render() {
     return `<div class="bg-gray-50 min-h-screen"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><button id="back-btn" class="w-10 h-10 flex items-center justify-center"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button><h1 class="text-lg font-semibold text-gray-900">找饭搭子</h1><div class="w-10"></div></div></nav><main class="max-w-md mx-auto px-4 pt-18 pb-24"><div class="bg-white rounded-xl shadow-sm p-4 mb-4"><div class="flex items-center justify-between mb-2"><span class="text-sm text-gray-500">当前需求</span><button id="edit-pref" class="text-sm text-orange-500">修改</button></div><div id="pref-tags" class="flex flex-wrap gap-2"></div></div><div class="mb-4"><h2 class="text-base font-semibold text-gray-900 mb-3">为你推荐 <span id="match-count">3</span> 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-12 bg-white border border-orange-500 text-orange-500 font-medium rounded-lg mb-3">换一批搭子</button><button id="publish-btn" class="pressable w-full h-12 bg-white border border-gray-300 text-gray-600 font-medium rounded-lg">发布到搭子广场</button></main>
 <!-- 修改偏好弹窗 -->
@@ -905,10 +947,11 @@ const MatchLunchPage = {
   init(params = {}) {
     this.forceEmpty = params && params.empty === '1';
     this.seenUserIds = [];
+    this.batchIndex = 0;
     document.getElementById('pref-drawer').style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(0,0,0,0.4);';
     document.getElementById('back-btn').addEventListener('click', () => Router.back());
     document.getElementById('edit-pref').addEventListener('click', () => this.openDrawer());
-    document.getElementById('change-btn').addEventListener('click', () => { document.getElementById('loading').classList.remove('hidden'); document.getElementById('loading').innerHTML = skeletonCards(2); document.getElementById('results').classList.add('hidden'); this.loadResults(); });
+    document.getElementById('change-btn').addEventListener('click', () => { this.batchIndex = (this.batchIndex + 1) % this.demoBatches.length; this.loadResults(); });
     document.getElementById('publish-btn').addEventListener('click', () => Router.navigateTo('/publish', { type: 'lunch' }));
     this.updatePrefDisplay();
     this.loadResults();
@@ -985,7 +1028,8 @@ const MatchLunchPage = {
       const preference = profile.lunchPreference || { time: '12:00', taste: ['清淡'], budget: '20-40' };
 
       // 首次加载且有预计算缓存，直接用
-      let result;
+      let result = this.demoBatches[this.batchIndex];
+      /*
       const cached = sessionStorage.getItem('preload_lunch');
       if (cached && this.seenUserIds.length === 0) {
         result = JSON.parse(cached);
@@ -997,6 +1041,7 @@ const MatchLunchPage = {
       } else {
         result = await executeMatch('lunch', preference, this.seenUserIds || []);
       }
+      */
 
       document.getElementById('loading')?.classList.add('hidden');
       const c = document.getElementById('results');
@@ -1034,9 +1079,7 @@ const MatchLunchPage = {
         return `<div class="bg-white rounded-xl shadow-sm p-4 mb-3 card-appear" data-match-id="${matchId}">
   <div class="flex items-center justify-between mb-3">
     <div class="flex items-center space-x-3">
-      <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-        <span class="text-lg font-medium text-orange-600">${name.charAt(0)}</span>
-      </div>
+      <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden">${avatarImg(uid)}</div>
       <div>
         <h3 class="text-base font-semibold text-gray-900">${name}</h3>
         <p class="text-sm text-gray-500">${dept}</p>
@@ -1077,6 +1120,23 @@ const MatchLunchPage = {
 
 // ============ 通勤匹配页 ============
 const MatchCommutePage = {
+  demoBatches: [
+    [
+      { candidate_id: 201, nickname: '赵晨', department: '研发部', score: 97, commonTags: ['回龙观', '08:30'], reason: '出发时间一致，路线重合度很高', commute_info: { area: '回龙观', time: '08:30', transport: '打车' } },
+      { candidate_id: 202, nickname: '方圆', department: '产品部', score: 93, commonTags: ['同路线', '音乐'], reason: '上车点相距不到五分钟', commute_info: { area: '龙泽', time: '08:25', transport: '顺风车' } },
+      { candidate_id: 203, nickname: '韩雨', department: '设计部', score: 89, commonTags: ['科技园', '早起'], reason: '终点相同，通勤习惯相近', commute_info: { area: '西二旗', time: '08:35', transport: '打车' } },
+    ],
+    [
+      { candidate_id: 204, nickname: '江川', department: '运营部', score: 95, commonTags: ['天通苑', '08:20'], reason: '可以在地铁口直接会合', commute_info: { area: '天通苑', time: '08:20', transport: '拼车' } },
+      { candidate_id: 205, nickname: '孟夏', department: '市场部', score: 91, commonTags: ['同小区', '播客'], reason: '住得近，路上还有共同话题', commute_info: { area: '霍营', time: '08:30', transport: '顺风车' } },
+      { candidate_id: 206, nickname: '陆安', department: '销售部', score: 87, commonTags: ['软件园', '准时'], reason: '路线稳定，时间误差不到十分钟', commute_info: { area: '育新', time: '08:40', transport: '打车' } },
+    ],
+    [
+      { candidate_id: 207, nickname: '程野', department: '财务部', score: 96, commonTags: ['西三旗', '08:30'], reason: '全程路线几乎完全重合', commute_info: { area: '西三旗', time: '08:30', transport: '拼车' } },
+      { candidate_id: 208, nickname: '白露', department: '人力资源部', score: 92, commonTags: ['同园区', '阅读'], reason: '上下班时间和目的地都一致', commute_info: { area: '清河', time: '08:25', transport: '顺风车' } },
+      { candidate_id: 209, nickname: '乔木', department: '法务部', score: 88, commonTags: ['低碳', '咖啡'], reason: '适合长期固定结伴通勤', commute_info: { area: '上地', time: '08:35', transport: '拼车' } },
+    ],
+  ],
   render() {
     const profile = getStorage('userProfile') || {};
     const cp = profile.commutePreference || { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' };
@@ -1124,6 +1184,7 @@ const MatchCommutePage = {
   init(params = {}) {
     this.forceEmpty = params && params.empty === '1';
     this.seenUserIds = [];
+    this.batchIndex = 0;
 
     // 编辑面板状态
     this._editDraft = null;
@@ -1223,7 +1284,7 @@ const MatchCommutePage = {
       this.loadResults();
     });
 
-    document.getElementById('change-btn').addEventListener('click', () => { document.getElementById('loading').classList.remove('hidden'); document.getElementById('loading').innerHTML = skeletonCards(2); document.getElementById('results').classList.add('hidden'); this.loadResults(); });
+    document.getElementById('change-btn').addEventListener('click', () => { this.batchIndex = (this.batchIndex + 1) % this.demoBatches.length; this.loadResults(); });
     document.getElementById('publish-btn').addEventListener('click', () => Router.navigateTo('/publish', { type: 'commute' }));
     this.loadResults();
   },
@@ -1232,7 +1293,8 @@ const MatchCommutePage = {
       const profile = getStorage('userProfile') || {};
       const preference = profile.commutePreference || { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' };
       
-      let result;
+      let result = this.demoBatches[this.batchIndex];
+      /*
       const cached = sessionStorage.getItem('preload_commute');
       if (cached && this.seenUserIds.length === 0) {
         result = JSON.parse(cached);
@@ -1243,6 +1305,7 @@ const MatchCommutePage = {
       } else {
         result = await executeMatch('commute', preference, this.seenUserIds || []);
       }
+      */
 
       document.getElementById('loading')?.classList.add('hidden');
       const c = document.getElementById('results');
@@ -1280,9 +1343,7 @@ const MatchCommutePage = {
         return `<div class="bg-white rounded-xl shadow-sm p-4 mb-3 card-appear" data-match-id="${matchId}">
   <div class="flex items-center justify-between mb-3">
     <div class="flex items-center space-x-3">
-      <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-        <span class="text-lg font-medium text-blue-600">${name.charAt(0)}</span>
-      </div>
+      <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">${avatarImg(uid)}</div>
       <div>
         <h3 class="text-base font-semibold text-gray-900">${name}</h3>
         <p class="text-sm text-gray-500">${dept || '通勤搭子'}</p>
@@ -1322,16 +1383,19 @@ const MatchCommutePage = {
 
 // ============ 邀请详情页 ============
 const InvitePage = {
+  renderTopicBatch(topics) {
+    return topics.map((topic, i) => `<div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"><span class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">${i + 1}</span><p class="text-sm text-gray-700">${topic}</p></div>`).join('');
+  },
   getTargetUser(params) {
     const uid = params && params.userId;
     const allUsers = { ...MOCK_USERS };
     const allProfiles = { ...MOCK_PROFILES };
-    const allRecs = [...(MOCK_MATCH_RECOMMENDATIONS.lunch || []), ...(MOCK_MATCH_RECOMMENDATIONS.commute || [])];
-    const rec = allRecs.find(r => r.uid === uid);
+    const allRecs = [...(MOCK_MATCH_RECOMMENDATIONS.lunch || []), ...(MOCK_MATCH_RECOMMENDATIONS.commute || []), ...(MatchLunchPage.demoBatches || []).flat(), ...(MatchCommutePage.demoBatches || []).flat()];
+    const rec = allRecs.find(r => String(r.uid || r.candidate_id || r.userId) === String(uid));
     const user = Object.values(allUsers).find(u => u.userId === uid);
     return {
-      name: rec?.name || user?.nickname || '搭子',
-      dept: rec?.dept || user?.department || '小米同学',
+      name: rec?.nickname || rec?.name || user?.nickname || '搭子',
+      dept: rec?.department || rec?.dept || user?.department || '小米同学',
       score: rec?.score || 85,
       tags: rec?.tags || [],
       reason: rec?.reason || '你们很匹配',
@@ -1345,9 +1409,23 @@ const InvitePage = {
   init(params) {
     const t = this.getTargetUser(params);
     const matchId = params && params.matchId;
+    const interest = t.interests[0] || 'AI';
+    const inviteBatches = [
+      `我今天12:30准备去食堂吃饭，看到我们都对${interest}挺感兴趣，要不要一起拼个饭？`,
+      '嗨，发现我们的午餐偏好很接近！今天中午有空一起去园区食堂尝尝新菜吗？',
+      '看到系统推荐我们成为搭子，感觉会很聊得来。中午一起吃饭，顺便交流一下最近的工作趣事？',
+    ];
+    const topicBatches = [
+      [`你最近有没有用到比较好用的${interest}工具？`, '你觉得园区附近哪家店最不踩雷？', '入职以来你印象最深的一件事是什么？'],
+      ['最近有没有哪部电影或剧让你特别上头？', '如果周末只选一种放松方式，你会选什么？', '你最近解锁了什么新的兴趣爱好？'],
+      ['你最想推荐给同事的一道食堂菜是什么？', '最近工作中有什么让你很有成就感的事？', '如果能马上出发旅行，你最想去哪里？'],
+    ];
+    let inviteIndex = 0;
+    let topicIndex = 0;
 
     // 用已生成的 icebreaker 替换初始静态内容
-    if (matchId) {
+    // 演示模式使用固定的三组内容，避免接口返回覆盖循环数据。
+    if (false && matchId) {
       request(`/api/match/icebreaker/${matchId}`, { method: 'GET' }).then(res => {
         if (res && res.inviteMessage) {
           document.getElementById('invite-msg').innerHTML = `<p class="text-sm text-gray-700 leading-relaxed">"${res.inviteMessage}"</p>`;
@@ -1378,55 +1456,14 @@ const InvitePage = {
       showToast('已复制到剪贴板');
     });
 
-    // 换一个话术 — 重新调 MiMo 生成
-    document.getElementById('refresh-invite').addEventListener('click', async () => {
-      const btn = document.getElementById('refresh-invite');
-      btn.textContent = '生成中...';
-      btn.disabled = true;
-      try {
-        if (matchId) {
-          const res = await request(`/api/match/icebreaker/${matchId}/regenerate`, { method: 'POST' });
-          if (res && res.inviteMessage) {
-            document.getElementById('invite-msg').innerHTML = `<p class="text-sm text-gray-700 leading-relaxed">"${res.inviteMessage}"</p>`;
-            btn.textContent = '换一个';
-            btn.disabled = false;
-            return;
-          }
-        }
-        showToast('无法重新生成，请返回重新匹配');
-      } catch (e) {
-        showToast('生成失败，请重试');
-      }
-      btn.textContent = '换一个';
-      btn.disabled = false;
+    document.getElementById('refresh-invite').addEventListener('click', () => {
+      inviteIndex = (inviteIndex + 1) % inviteBatches.length;
+      document.getElementById('invite-msg').innerHTML = `<p class="text-sm text-gray-700 leading-relaxed">"${inviteBatches[inviteIndex]}"</p>`;
     });
 
-    // 换一批话题 — 重新调 MiMo 生成
-    document.getElementById('refresh-ice').addEventListener('click', async () => {
-      const btn = document.getElementById('refresh-ice');
-      btn.textContent = '生成中...';
-      btn.disabled = true;
-      try {
-        if (matchId) {
-          const res = await request(`/api/match/icebreaker/${matchId}/regenerate`, { method: 'POST' });
-          if (res && Array.isArray(res.icebreakerTopics) && res.icebreakerTopics.length > 0) {
-            document.getElementById('ice-topics').innerHTML = res.icebreakerTopics.map((topic, i) =>
-              `<div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                <span class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">${i + 1}</span>
-                <p class="text-sm text-gray-700">${topic}</p>
-              </div>`
-            ).join('');
-            btn.textContent = '换一批';
-            btn.disabled = false;
-            return;
-          }
-        }
-        showToast('无法重新生成，请返回重新匹配');
-      } catch (e) {
-        showToast('生成失败，请重试');
-      }
-      btn.textContent = '换一批';
-      btn.disabled = false;
+    document.getElementById('refresh-ice').addEventListener('click', () => {
+      topicIndex = (topicIndex + 1) % topicBatches.length;
+      document.getElementById('ice-topics').innerHTML = this.renderTopicBatch(topicBatches[topicIndex]);
     });
 
     document.getElementById('send-invite').addEventListener('click', () => {
@@ -1866,19 +1903,26 @@ const DailyPage = {
   },
   init() {
     document.getElementById('back-btn').addEventListener('click', () => Router.back());
-    document.getElementById('refresh-daily').addEventListener('click', () => this.loadRecommendation());
-    this.state = { menuFilter: 'all', fortuneRevealed: false };
+    document.getElementById('refresh-daily').addEventListener('click', () => this.loadRecommendation(true));
+    this.state = { menuFilter: 'all', fortuneRevealed: false, recommendationIndex: 0 };
     this.initFortuneCards();
     this.loadRecommendation();
     this.loadMenu();
     this.loadOffers();
   },
-  async loadRecommendation() {
+  async loadRecommendation(advance = false) {
     const TAROT_FALLBACKS = [
       { text: '塔罗牌显示：今日贵人在食堂等你，主动开口必有惊喜', tag: '🃏 大阿卡纳·愚者' },
       { text: '塔罗牌显示：今日能量充盈，找到志同道合的饭搭子概率+200%', tag: '🌟 大阿卡纳·星星' },
       { text: '塔罗牌显示：今日适合突破舒适圈，试试平时不敢搭话的那位同事', tag: '☀️ 大阿卡纳·太阳' },
     ];
+    if (advance) this.state.recommendationIndex = (this.state.recommendationIndex + 1) % TAROT_FALLBACKS.length;
+    const demo = TAROT_FALLBACKS[this.state.recommendationIndex];
+    const demoTextEl = document.getElementById('daily-text');
+    const demoTagEl = document.getElementById('daily-tag');
+    if (demoTextEl) demoTextEl.textContent = `"${demo.text}"`;
+    if (demoTagEl) demoTagEl.textContent = demo.tag;
+    return;
     const rec = await getDailyRecommendation();
     const textEl = document.getElementById('daily-text');
     const tagEl = document.getElementById('daily-tag');
