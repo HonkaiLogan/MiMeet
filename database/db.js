@@ -35,6 +35,11 @@ async function initDB() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // Add mimo_profile column if it doesn't exist yet (safe to run repeatedly)
+    await conn.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS mimo_profile JSON DEFAULT NULL;
+    `).catch(() => {});
+
     // 用户画像表
     await conn.query(`
       CREATE TABLE IF NOT EXISTS profiles (
