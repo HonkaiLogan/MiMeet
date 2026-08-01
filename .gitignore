@@ -15,3 +15,9 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# 日志
+*.log
+
+# 临时测试脚本
+test*.js

@@ -8,60 +8,33 @@
 // ============ 配置 ============
 const BASE_URL = "http://localhost:5000";
 const APP_CONFIG = { appName: "Mi搭子", version: "1.0.0", maxTasteCount: 3, maxInterestCount: 5 };
-
-// 开发环境登录旁路:URL 加 ?devUser=u001 或 localStorage.devUser='u001' 即可用种子用户登录
-// 不设或飞书真登录时,自动忽略
-const DEV_USER_INFO = {
-  u001: { userId: 'u001', nickname: '小米同学', department: '中国区-新零售部', joinDate: '2025-07-01' },
-  u002: { userId: 'u002', nickname: '吴同学', department: '人力资源部', joinDate: '2025-07-01' },
-  u003: { userId: 'u003', nickname: '李同学', department: '手机部-硬件工程部', joinDate: '2024-07-01' },
-  u004: { userId: 'u004', nickname: '王同学', department: '手机部-新业务部', joinDate: '2026-04-01' },
-  u005: { userId: 'u005', nickname: '黄同学', department: '中国区-电商部', joinDate: '2025-07-01' },
-  u006: { userId: 'u006', nickname: '赵同学', department: '技术部', joinDate: '2025-04-01' },
-  u007: { userId: 'u007', nickname: '周同学', department: '产品部', joinDate: '2025-07-01' },
-  u008: { userId: 'u008', nickname: '张同学', department: '设计部', joinDate: '2026-01-01' },
-};
-
-function getDevUser() {
-  const fromUrl = new URLSearchParams(location.search).get('devUser');
-  if (fromUrl) {
-    try {
-      localStorage.setItem('devUser', fromUrl);
-      // 顺便 seed 前端登录态,免得再点一次登录按钮
-      if (DEV_USER_INFO[fromUrl]) localStorage.setItem('userInfo', JSON.stringify(DEV_USER_INFO[fromUrl]));
-    } catch {}
-    return fromUrl;
+function getAvatarSrc(nameOrId) {
+  if (typeof MOCK_USERS !== 'undefined') {
+    // 优先按 userId 查
+    const byId = MOCK_USERS[nameOrId];
+    if (byId) return byId.avatar;
+    // 再按 nickname 查
+    const byName = Object.values(MOCK_USERS).find(u => u.nickname === nameOrId);
+    if (byName) return byName.avatar;
   }
-  try { return localStorage.getItem('devUser') || ''; } catch { return ''; }
+  return './assets/avatars/28.jpg';
 }
 
-// 立即执行一次,确保后续 LoginPage/HomePage guard 能读到 userInfo
-getDevUser();
-const AVATARS = {
-  '小米同学': './assets/avatar-01.jpg',
-  '吴同学': './assets/avatar-02.jpg',
-  '李同学': './assets/avatar-03.jpg',
-  '王同学': './assets/avatar-04.jpg',
-  '刘同学': './assets/avatar-05.jpg',
-  '陈同学': './assets/avatar-06.jpg',
-  '黄同学': './assets/avatar-05.jpg',
-  '赵同学': './assets/avatar-06.jpg',
-  '周同学': './assets/avatar-03.jpg',
-  '张同学': './assets/avatar-02.jpg'
-};
-
-function avatarImg(name, cls = '') {
-  const src = AVATARS[name] || AVATARS['小米同学'];
-  return `<img src="${src}" alt="${name}头像" class="avatar-photo ${cls}">`;
+function avatarImg(nameOrId, cls = '') {
+  const src = getAvatarSrc(nameOrId);
+  return `<img src="${src}" alt="${nameOrId}头像" class="avatar-photo ${cls}">`;
 }
 
 function hydrateAvatarPhotos(root = document) {
   root.querySelectorAll('p').forEach(text => {
     if (text.textContent === '产品部 · 入职1年') text.textContent = '人力资源部 · 入职1年';
   });
+  const allNicknames = typeof MOCK_USERS !== 'undefined'
+    ? Object.values(MOCK_USERS).map(u => u.nickname)
+    : [];
   const labels = root.querySelectorAll('h2, h3, p');
   labels.forEach(label => {
-    const name = Object.keys(AVATARS).find(candidate => label.textContent.includes(candidate));
+    const name = allNicknames.find(candidate => label.textContent.includes(candidate));
     if (!name) return;
     const row = label.closest('.flex.items-center');
     const holder = row && row.querySelector('.rounded-full');
@@ -92,8 +65,19 @@ const INTEREST_OPTIONS = [
   { value: "旅行", label: "旅行", icon: "✈️" }, { value: "电影", label: "电影", icon: "🎬" }, { value: "音乐", label: "音乐", icon: "🎵" },
   { value: "游戏", label: "游戏", icon: "🎮" }, { value: "宠物", label: "宠物", icon: "🐱" }, { value: "美食", label: "美食", icon: "🍕" }
 ];
-const AREA_OPTIONS = [{ value: "回龙观", label: "回龙观" }, { value: "望京", label: "望京" }, { value: "通州", label: "通州" }, { value: "五道口", label: "五道口" }, { value: "天通苑", label: "天通苑" }, { value: "西二旗", label: "西二旗" }, { value: "上地", label: "上地" }];
-const TRANSPORT_OPTIONS = [{ value: "打车", label: "打车", icon: "🚕" }, { value: "顺风车", label: "顺风车", icon: "🚗" }, { value: "地铁+打车", label: "地铁+打车", icon: "🚇" }, { value: "自驾", label: "自驾", icon: "🚙" }];
+const AREA_OPTIONS = [
+  { value: "回龙观", label: "回龙观" }, { value: "天通苑", label: "天通苑" }, { value: "西二旗", label: "西二旗" },
+  { value: "上地", label: "上地" }, { value: "望京", label: "望京" }, { value: "五道口", label: "五道口" },
+  { value: "通州", label: "通州" }, { value: "亦庄", label: "亦庄" }, { value: "朝阳", label: "朝阳" },
+  { value: "海淀", label: "海淀" }, { value: "顺义", label: "顺义" }, { value: "昌平", label: "昌平" },
+  { value: "其他", label: "其他" }
+];
+const TRANSPORT_OPTIONS = [
+  { value: "打车", label: "打车", icon: "🚕" }, { value: "顺风车", label: "顺风车", icon: "🚗" },
+  { value: "地铁", label: "地铁", icon: "🚇" }, { value: "地铁+打车", label: "地铁+打车", icon: "🚇" },
+  { value: "自驾", label: "自驾", icon: "🚙" }, { value: "骑行", label: "骑行", icon: "🚲" },
+  { value: "其他", label: "其他", icon: "🚌" }
+];
 const LOCATION_OPTIONS = [{ value: "一楼食堂", label: "一楼食堂" }, { value: "二楼食堂", label: "二楼食堂" }, { value: "三楼食堂", label: "三楼食堂" }, { value: "楼下商圈", label: "楼下商圈" }, { value: "都可以", label: "都可以" }];
 const SOCIAL_OPTIONS = [{ value: "轻松聊天", label: "轻松聊天", icon: "💬" }, { value: "想认识新朋友", label: "想认识新朋友", icon: "👋" }, { value: "安静吃饭", label: "安静吃饭", icon: "🤫" }];
 
@@ -116,6 +100,14 @@ const TYPE_META = {
 };
 
 // ============ 工具函数 ============
+function relativeTime(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+  return `${Math.floor(diff / 86400)}天前`;
+}
+
 function showToast(msg, dur = 2000) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:10px 20px;border-radius:8px;font-size:14px;z-index:9999;max-width:80%;text-align:center;';
@@ -159,6 +151,36 @@ function initPullToRefresh(touchArea, indicatorHost, callback) {
 // 骨架屏卡片列表（列表/匹配页加载中占位，替代纯 spinner）
 function skeletonCards(n = 3) {
   return Array.from({ length: n }).map(() => `<div class="skeleton-card flex items-center space-x-3"><div class="skeleton skeleton-avatar"></div><div class="flex-1"><div class="skeleton skeleton-line" style="width:60%"></div><div class="skeleton skeleton-line" style="width:90%"></div></div></div>`).join('');
+}
+
+// 轮询等待 MiMo 生成话术后更新卡片
+function pollIcebreaker(matchId, accentColor) {
+  const maxAttempts = 10; // 最多 20s
+  const interval = 2000;
+  let attempts = 0;
+  const timer = setInterval(async () => {
+    attempts++;
+    const el = document.querySelector(`.ice-section[data-match-id="${matchId}"]`);
+    if (!el) { clearInterval(timer); return; }
+    try {
+      const res = await request(`/api/match/icebreaker/${matchId}`, { method: 'GET' });
+      if (res && res.inviteMessage) {
+        clearInterval(timer);
+        const topics = Array.isArray(res.icebreakerTopics) ? res.icebreakerTopics : [];
+        const color = accentColor === 'commute' ? 'blue' : 'orange';
+        el.innerHTML = `
+          <div class="p-3 bg-${color}-50 rounded-lg mb-3">
+            <p class="text-xs text-${color}-500 mb-1">💬 邀请话术（可直接发送）</p>
+            <p class="text-sm text-${color}-800">${res.inviteMessage}</p>
+          </div>
+          ${topics.length > 0 ? `<div class="p-3 bg-purple-50 rounded-lg mb-3">
+            <p class="text-xs text-purple-500 mb-1.5">🎯 破冰话题</p>
+            <div class="flex flex-wrap gap-1.5">${topics.map(t => `<span class="px-2 py-0.5 bg-white rounded-full text-xs text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
+          </div>` : ''}`;
+      }
+    } catch {}
+    if (attempts >= maxAttempts) clearInterval(timer);
+  }, interval);
 }
 
 // 简单表单校验：必须至少选中一项，否则显示错误提示并返回 false
@@ -210,23 +232,22 @@ const WEEKEND_ACTIVITY_OPTIONS = [
 ];
 
 // ============ API 请求 ============
-// Mock 数据标记：后端未启动时自动使用
+// Mock 数据标记：后端可用时自动切换，不可用时降级到 mock
 let useMockData = false;
 let mockDataCheckDone = false;
 
-// 检测后端是否可用(用无需登录的 /api/food/offers 探测,避免占用一次登录态)
+// 检测后端是否可用
 async function checkBackend() {
   if (mockDataCheckDone) return;
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
-    const res = await fetch(`${BASE_URL}/api/food/offers`, {
+    await fetch(`${BASE_URL}/api/user/getProfile`, { 
       method: 'GET',
-      credentials: 'include',
-      signal: controller.signal
+      signal: controller.signal 
     });
     clearTimeout(timeoutId);
-    useMockData = !res.ok;
+    useMockData = false;
   } catch (e) {
     console.log('后端未启动，使用Mock数据模式');
     useMockData = true;
@@ -248,19 +269,12 @@ async function request(apiPath, options = {}) {
   try {
     const fetchOptions = {
       headers: { "Content-Type": "application/json" },
-      credentials: 'include',
       ...options
     };
     if (fetchOptions.body && typeof fetchOptions.body !== 'string') {
       fetchOptions.body = JSON.stringify(fetchOptions.body);
     }
-    // 自动附加 dev 参数(仅本地开发用)
-    const devUser = getDevUser();
-    let finalPath = apiPath;
-    if (devUser) {
-      finalPath += (apiPath.includes('?') ? '&' : '?') + 'dev=' + encodeURIComponent(devUser);
-    }
-    const res = await fetch(`${BASE_URL}${finalPath}`, fetchOptions);
+    const res = await fetch(`${BASE_URL}${apiPath}`, fetchOptions);
     
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -309,9 +323,134 @@ function getMockData(apiPath, options) {
     case '/api/match/execute': {
       const body = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : {};
       const type = body.scene || body.type || 'lunch';
-      return {
-        recommendations: MOCK_MATCH_RECOMMENDATIONS[type] || []
-      };
+      const pref = body.preference || {};
+      const seenIds = new Set((body.seenUserIds || []).map(String));
+      const results = [];
+
+      for (const [uid, user] of Object.entries(MOCK_USERS)) {
+        if (uid === 'u001') continue; // 排除自己
+        if (seenIds.has(uid)) continue;
+        const profile = MOCK_PROFILES[uid];
+        if (!profile) continue;
+        let score = 0;
+
+        if (type === 'commute') {
+          const cp = profile.commutePreference || {};
+          // 居住区域匹配
+          if (pref.homeArea && cp.homeArea) {
+            if (pref.homeArea === cp.homeArea) score += 40;
+            else {
+              const adj = {
+                '昌平':  ['回龙观','天通苑','顺义'],
+                '回龙观':['昌平','西二旗','天通苑','上地'],
+                '天通苑':['昌平','回龙观','望京','顺义'],
+                '顺义':  ['昌平','天通苑','望京'],
+                '西二旗':['回龙观','上地','海淀'],
+                '上地':  ['西二旗','回龙观','五道口','海淀'],
+                '望京':  ['天通苑','五道口','朝阳','顺义'],
+                '五道口':['上地','望京','海淀','朝阳'],
+                '海淀':  ['西二旗','上地','五道口'],
+                '朝阳':  ['望京','五道口','通州'],
+                '通州':  ['朝阳','亦庄'],
+                '亦庄':  ['通州','朝阳'],
+              };
+              if ((adj[pref.homeArea] || []).includes(cp.homeArea)) score += 20;
+            }
+          }
+          // 出发时间匹配
+          if (pref.departureTime && cp.departureTime) {
+            const [h1, m1] = pref.departureTime.split(':').map(Number);
+            const [h2, m2] = cp.departureTime.split(':').map(Number);
+            const diff = Math.abs((h1 * 60 + m1) - (h2 * 60 + m2));
+            if (diff <= 15) score += 35;
+            else if (diff <= 30) score += 20;
+            else if (diff <= 60) score += 5; // 时间差大但区域近，降分保留
+            // diff > 60 不加分，但不排除，让区域分决定是否入选
+          } else {
+            score += 20;
+          }
+          // 交通方式匹配
+          if (pref.transportMode && cp.transportMode) {
+            if (pref.transportMode === cp.transportMode) score += 15;
+            else if (
+              (['打车','顺风车'].includes(pref.transportMode) && ['打车','顺风车'].includes(cp.transportMode)) ||
+              (['地铁','地铁+打车'].includes(pref.transportMode) && ['地铁','地铁+打车'].includes(cp.transportMode))
+            ) score += 8;
+          }
+          // 兴趣标签
+          const myTags = (getStorage('userProfile') || {}).interestTags || [];
+          const theirTags = profile.interestTags || [];
+          const common = myTags.filter(t => theirTags.includes(t));
+          score += Math.min(10, common.length * 4);
+
+          if (score > 0) {
+            const commutePref = cp;
+            results.push({
+              candidate_id: uid, uid,
+              nickname: user.nickname, name: user.nickname,
+              avatar_url: user.avatar,
+              department: user.department, dept: user.department,
+              score, rule_score: score,
+              commonTags: common.slice(0, 3),
+              tags: common.slice(0, 3),
+              reason: pref.homeArea && cp.homeArea === pref.homeArea ? `同在${cp.homeArea}出发` : '路线相近',
+              commute_info: { area: commutePref.homeArea || '', time: commutePref.departureTime || '', transport: commutePref.transportMode || '' },
+            });
+          }
+        } else {
+          // 午餐匹配
+          const lp = profile.lunchPreference || {};
+          // 用餐时间
+          if (pref.time && lp.time) {
+            const [h1, m1] = pref.time.split(':').map(Number);
+            const [h2, m2] = lp.time.split(':').map(Number);
+            const diff = Math.abs((h1 * 60 + m1) - (h2 * 60 + m2));
+            if (diff <= 15) score += 30;
+            else if (diff <= 30) score += 15;
+            else continue;
+          } else {
+            score += 15;
+          }
+          // 口味匹配
+          const myTaste = Array.isArray(pref.taste) ? pref.taste : [];
+          const theirTaste = Array.isArray(lp.taste) ? lp.taste : [];
+          const tasteCommon = myTaste.filter(t => theirTaste.includes(t));
+          if (myTaste.length > 0) {
+            if (tasteCommon.length === myTaste.length) score += 25;
+            else if (tasteCommon.length > 0) score += 12;
+          } else {
+            score += 12;
+          }
+          // 兴趣标签
+          const myTags = (getStorage('userProfile') || {}).interestTags || [];
+          const theirTags = profile.interestTags || [];
+          const common = myTags.filter(t => theirTags.includes(t));
+          score += Math.min(15, common.length * 5);
+          // 社交偏好
+          if (pref.socialMode && lp.socialMode && pref.socialMode === lp.socialMode) score += 15;
+
+          if (score > 0) {
+            results.push({
+              candidate_id: uid, uid,
+              nickname: user.nickname, name: user.nickname,
+              avatar_url: user.avatar,
+              department: user.department, dept: user.department,
+              score, rule_score: score,
+              commonTags: common.slice(0, 3),
+              tags: common.slice(0, 3),
+              reason: tasteCommon.length ? `口味都偏${tasteCommon[0]}` : (common.length ? `都喜欢${common[0]}` : '偏好相近'),
+              recommended_canteen: { name: '二楼轻食区', walk: '步行3分钟', avgPrice: '25-40元' },
+            });
+          }
+        }
+      }
+
+      results.sort((a, b) => b.score - a.score);
+      // 取前2高分 + 1随机
+      const top2 = results.slice(0, 2);
+      const rest = results.slice(2);
+      const rand = rest.length > 0 ? [rest[Math.floor(Math.random() * rest.length)]] : [];
+      return [...top2, ...rand].slice(0, 3);
     }
     
     case '/api/match/feedback':
@@ -435,7 +574,7 @@ async function getUserProfile() { return await request('/api/user/getProfile', {
 async function saveUserProfile(data) { return await request('/api/user/saveProfile', { method: 'POST', body: data }); }
 
 // 匹配相关
-async function executeMatch(type, pref) { return await request('/api/match/execute', { method: 'POST', body: { scene: type, preference: pref } }); }
+async function executeMatch(type, pref, seenUserIds = []) { return await request('/api/match/execute', { method: 'POST', body: { scene: type, preference: pref, seenUserIds } }); }
 async function submitFeedback(data) { return await request('/api/match/feedback', { method: 'POST', body: data }); }
 async function getMatchHistory(page, size) { return await request(`/api/match/history?page=${page}&pageSize=${size}`, { method: 'GET' }); }
 async function sendInvite(targetUserId, inviteMessage) { return await request('/api/match/invite', { method: 'POST', body: { targetUserId, inviteMessage } }); }
@@ -460,135 +599,60 @@ async function getFeishuJSAPIConfig(url) { return await request(`/api/feishu/jsa
 const Router = {
   routes: {},
   currentPage: null,
-  
-  init() { 
-    window.addEventListener('hashchange', () => this.handleRoute()); 
-    this.handleRoute(); 
+
+  init() {
+    window.addEventListener('hashchange', () => this.handleRoute());
+    this.handleRoute();
   },
-  
-  register(path, handler) { 
-    this.routes[path] = handler; 
+
+  register(path, handler) {
+    this.routes[path] = handler;
   },
-  
+
   handleRoute() {
     const hash = window.location.hash.slice(1) || '/login';
     const [path, queryString] = hash.split('?');
     const params = {};
     if (queryString) {
-      queryString.split('&').forEach(pair => { 
-        const [k, v] = pair.split('='); 
-        params[decodeURIComponent(k)] = decodeURIComponent(v || ''); 
+      queryString.split('&').forEach(pair => {
+        const [k, v] = pair.split('=');
+        params[decodeURIComponent(k)] = decodeURIComponent(v || '');
       });
     }
-    
     const handler = this.routes[path];
     if (handler) {
       this.renderPage(handler, params);
     } else {
-      this.navigateTo('/login');
+      this.navigateTo('/home');
     }
   },
-  
+
   renderPage(handler, params) {
     const app = document.getElementById('app');
-    
-    // 页面切换动画
     app.style.opacity = '0';
     app.style.transform = 'translateY(10px)';
-    
     setTimeout(() => {
-      // 渲染页面内容
       app.innerHTML = handler.render(params);
-      
-      // 初始化页面事件
-      if (handler.init) {
-        handler.init(params);
-      }
-      
-      // 执行头像替换
-      if (typeof hydrateAvatarPhotos === 'function') {
-        hydrateAvatarPhotos(app);
-      }
-      
-      // 淡入动画
+      if (handler.init) handler.init(params);
+      if (typeof hydrateAvatarPhotos === 'function') hydrateAvatarPhotos(app);
       requestAnimationFrame(() => {
         app.style.transition = 'opacity 0.25s ease-out, transform 0.25s ease-out';
         app.style.opacity = '1';
         app.style.transform = 'translateY(0)';
       });
-      
       this.currentPage = handler;
     }, 150);
   },
-  
+
   navigateTo(path, params = {}) {
     let hash = `#${path}`;
     const qs = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
     if (qs) hash += `?${qs}`;
     window.location.hash = hash;
   },
-  
-  back() { 
-    window.history.back(); 
-  }
-};
 
-// ============ 登录页 ============
-const LoginPage = {
-  render() {
-    return `<div class="login-page-bg min-h-screen flex items-center justify-center"><div class="login-decor login-decor-1"></div><div class="login-decor login-decor-2"></div><div class="login-decor login-decor-3"></div><div class="w-full max-w-sm px-6 relative z-10"><div class="text-center mb-12"><div class="login-logo-glow w-20 h-20 bg-orange-500 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">${ICONS.logo('w-10 h-10 text-white')}</div><h1 class="text-2xl font-bold text-gray-900">Mi搭子</h1><p class="text-sm text-gray-500 mt-2">Meet 你的命中搭子</p></div><button id="login-btn" class="pressable w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-md"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><span>随机模拟登录</span></button><p class="text-center text-xs text-gray-400 mt-6">点击后自动分配一个模拟身份和工位</p><div class="text-center mt-16"><p class="text-xs text-gray-300">v${APP_CONFIG.version} · 小米人自己的轻社交平台</p></div></div></div>`;
-  },
-  async init() {
-    // 已有本地登录态直接进首页
-    if (getStorage('userInfo')) { Router.navigateTo('/home'); return; }
-    // 探测后端 session
-    try {
-      const res = await fetch(`${BASE_URL}/auth/me`, { credentials: 'include' });
-      if (res.ok) {
-        const d = await res.json();
-        if (d.code === 200 && d.data) {
-          setStorage('userInfo', {
-            feishuId: d.data.feishuId,
-            nickname: d.data.nickname,
-            avatar: d.data.avatarUrl || '',
-            department: d.data.department || '',
-            seatNumber: d.data.seatNumber || '',
-          });
-          Router.navigateTo('/home');
-          return;
-        }
-      }
-    } catch {}
-
-    document.getElementById('login-btn').addEventListener('click', async () => {
-      const btn = document.getElementById('login-btn');
-      setButtonLoading(btn, '登录中...');
-      try {
-        const res = await fetch(`${BASE_URL}/auth/mock`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const d = await res.json();
-        if (d.code !== 200 || !d.data) {
-          setButtonNormal(btn);
-          showToast(d.msg || '登录失败');
-          return;
-        }
-        setStorage('userInfo', {
-          feishuId: d.data.feishuId,
-          nickname: d.data.nickname,
-          avatar: d.data.avatarUrl || '',
-          department: d.data.department || '',
-          seatNumber: d.data.seatNumber || '',
-        });
-        showToast(`欢迎 ${d.data.nickname}`);
-        setTimeout(() => Router.navigateTo(getStorage('userProfile') ? '/home' : '/profile-init'), 500);
-      } catch (e) {
-        setButtonNormal(btn);
-        showToast('网络异常,登录失败');
-      }
-    });
+  back() {
+    window.history.back();
   }
 };
 
@@ -601,54 +665,109 @@ const HomePage = {
     if (!getStorage('userInfo')) { Router.navigateTo('/login'); return; }
     const u = getStorage('userInfo');
     if (u.nickname) document.getElementById('user-avatar-text').textContent = u.nickname.charAt(0);
-    document.getElementById('refresh-rec').addEventListener('click', () => this.loadRecommendation());
+    document.getElementById('refresh-rec').addEventListener('click', () => showToast('已刷新推荐'));
     document.getElementById('view-rec').addEventListener('click', () => Router.navigateTo('/daily'));
     document.getElementById('avatar-btn').addEventListener('click', () => Router.navigateTo('/profile'));
-    this.loadRecommendation();
+
+    // 加载搭子广场预览
     this.loadSquarePreview();
+
+    // 后台静默预计算，结果缓存到 sessionStorage
+    this.preloadAll();
   },
-  async loadRecommendation() {
-    const rec = await getDailyRecommendation();
-    if (rec) {
-      const text = rec.recommendation || rec.text || '';
-      const tag = rec.funTag || rec.tag || '';
-      if (text) document.getElementById('rec-text').textContent = `"${text}"`;
-      if (tag) document.getElementById('fun-tag').textContent = tag;
-    }
-  },
+
   async loadSquarePreview() {
-    const result = await getPlazaList('all', 1, 2);
-    const container = document.getElementById('square-preview');
-    if (!container) return;
-    const list = (result && result.list) || [];
-    if (list.length === 0) {
-      container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">暂无搭子需求</p>';
-      return;
+    try {
+      const result = await request('/api/plaza/list', { method: 'GET' });
+      const list = Array.isArray(result) ? result : [];
+      const el = document.getElementById('square-preview');
+      if (!el) return;
+      if (list.length === 0) {
+        el.innerHTML = '<p class="text-sm text-gray-400 text-center py-3">暂无动态</p>';
+        return;
+      }
+      el.innerHTML = list.slice(0, 3).map(p => {
+        const isLunch = p.scene === 'lunch';
+        const name = p.nickname || '匿名';
+        const timeAgo = p.created_at ? relativeTime(p.created_at) : '';
+        const content = p.content || (isLunch ? '想找饭搭子' : '想找拼车搭子');
+        return `<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 ${isLunch ? 'bg-orange-100' : 'bg-blue-100'} rounded-full flex items-center justify-center">
+              <span class="text-sm ${isLunch ? 'text-orange-600' : 'text-blue-600'}">${name.charAt(0)}</span>
+            </div>
+            <div><p class="text-sm font-medium text-gray-900">${name}</p><p class="text-xs text-gray-500">${content}</p></div>
+          </div>
+          <span class="text-xs text-gray-400">${timeAgo}</span>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      // 静默失败，保留骨架
     }
-    const summarize = (p) => {
-      const c = p.content || {};
-      if (p.type === 'lunch') return `${c.time || ''} 想找${(c.taste || []).join('/')}饭搭子`;
-      if (p.type === 'commute') return `${c.departureTime || ''} ${c.homeArea || ''} 到科技园`;
-      if (p.type === 'weekend') return `${c.activity || ''} ${c.description || ''}`;
-      return '';
-    };
-    container.innerHTML = list.map(p => `<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><div class="flex items-center space-x-3"><div class="w-8 h-8 ${p.type === 'lunch' ? 'bg-orange-100' : 'bg-blue-100'} rounded-full flex items-center justify-center"><span class="text-sm ${p.type === 'lunch' ? 'text-orange-600' : 'text-blue-600'}">${(p.nickname || '?').charAt(0)}</span></div><div><p class="text-sm font-medium text-gray-900">${p.nickname || '匿名'}</p><p class="text-xs text-gray-500">${summarize(p)}</p></div></div><span class="text-xs text-gray-400">${p.publishTime || ''}</span></div>`).join('');
+  },
+
+  async preloadAll() {
+    const today = new Date().toISOString().slice(0, 10);
+
+    // 1. 每日推荐（当天只算一次）
+    const dailyKey = `preload_daily_${today}`;
+    if (!sessionStorage.getItem(dailyKey)) {
+      getDailyRecommendation().then(rec => {
+        if (rec) {
+          sessionStorage.setItem(dailyKey, JSON.stringify(rec));
+          // 更新首页推荐卡片文字
+          const el = document.getElementById('rec-text');
+          if (el && rec.social_tip) el.textContent = `"${rec.social_tip}"`;
+          const tag = document.getElementById('fun-tag');
+          if (tag && rec.recommended_food) tag.textContent = `🍽️ ${rec.recommended_food}`;
+        }
+      }).catch(() => {});
+    } else {
+      // 已有缓存，直接更新首页卡片
+      try {
+        const rec = JSON.parse(sessionStorage.getItem(dailyKey));
+        const el = document.getElementById('rec-text');
+        if (el && rec.social_tip) el.textContent = `"${rec.social_tip}"`;
+        const tag = document.getElementById('fun-tag');
+        if (tag && rec.recommended_food) tag.textContent = `🍽️ ${rec.recommended_food}`;
+      } catch (e) {}
+    }
+
+    // 2. 午餐匹配预计算（本次会话无缓存才计算）
+    if (!sessionStorage.getItem('preload_lunch')) {
+      const _lp = (getStorage('userProfile') || {}).lunchPreference || {};
+      executeMatch('lunch', _lp, []).then(result => {
+        if (result && result.length > 0) {
+          sessionStorage.setItem('preload_lunch', JSON.stringify(result));
+        }
+      }).catch(() => {});
+    }
+
+    // 3. 通勤匹配预计算
+    if (!sessionStorage.getItem('preload_commute')) {
+      const _cp = (getStorage('userProfile') || {}).commutePreference || {};
+      executeMatch('commute', _cp, []).then(result => {
+        if (result && result.length > 0) {
+          sessionStorage.setItem('preload_commute', JSON.stringify(result));
+        }
+      }).catch(() => {});
+    }
   }
 };
 
 // ============ 画像填写页 ============
 const ProfileInitPage = {
-  state: { step: 1, time: '12:00', tastes: ['清淡', '米饭'], budget: '20-40', location: '都可以', social: '轻松聊天', interests: [] },
+  state: { step: 1, time: '12:00', tastes: ['清淡', '米饭'], budget: '20-40', location: '都可以', social: '轻松聊天', commuteArea: '回龙观', commuteTime: '08:30', transport: '打车', interests: [] },
   render() {
-    return `<div class="bg-gray-50 min-h-screen"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><button id="skip-btn" class="text-sm text-gray-500">跳过</button><div class="flex items-center space-x-2"><div id="step-1" class="w-8 h-1 bg-orange-500 rounded-full"></div><div id="step-2" class="w-8 h-1 bg-gray-200 rounded-full"></div></div><div class="w-10"></div></div></nav><main id="page-1" class="max-w-md mx-auto px-4 pt-20 pb-24"><div class="mb-8"><h1 class="text-2xl font-bold text-gray-900">Hi，小米同学！</h1><p class="text-base text-gray-500 mt-2">30秒完成设置，找到你的命中搭子</p></div><div class="space-y-6"><div><label class="block text-sm font-medium text-gray-700 mb-3">用餐时间</label><div id="time-opts" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-3">口味偏好（最多选3个）</label><div id="taste-opts" class="flex flex-wrap gap-2"></div><p id="taste-err" class="field-error">请至少选择1个口味偏好</p></div><div><label class="block text-sm font-medium text-gray-700 mb-3">预算范围</label><div id="budget-opts" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-3">用餐地点</label><div id="location-opts" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-3">社交偏好</label><div id="social-opts" class="flex flex-wrap gap-2"></div></div></div></main><main id="page-2" class="max-w-md mx-auto px-4 pt-20 pb-24 hidden"><div class="mb-8"><h1 class="text-2xl font-bold text-gray-900">你对什么感兴趣？</h1><p class="text-base text-gray-500 mt-2">选几个标签，帮你找到同频搭子</p></div><div><label class="block text-sm font-medium text-gray-700 mb-3">兴趣标签（最多选5个）</label><div id="interest-opts" class="flex flex-wrap gap-2"></div><p id="interest-err" class="field-error">请至少选择1个兴趣标签</p></div></main><div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50"><button id="next-btn" class="w-full h-12 bg-orange-500 text-white font-medium rounded-lg">下一步</button></div></div>`;
+    return `<div class="bg-gray-50 min-h-screen"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><button id="skip-btn" class="text-sm text-gray-500">跳过</button><div class="flex items-center space-x-2"><div id="step-1" class="w-8 h-1 bg-orange-500 rounded-full"></div><div id="step-2" class="w-8 h-1 bg-gray-200 rounded-full"></div><div id="step-3" class="w-8 h-1 bg-gray-200 rounded-full"></div></div><div class="w-10"></div></div></nav><main id="page-1" class="max-w-md mx-auto px-4 pt-20 pb-24"><div class="mb-8"><h1 class="text-2xl font-bold text-gray-900">Hi，小米同学！</h1><p class="text-base text-gray-500 mt-2">30秒完成设置，找到你的命中搭子</p></div><div class="space-y-6"><div><label class="block text-sm font-medium text-gray-700 mb-3">用餐时间</label><div id="time-opts" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-3">口味偏好（最多选3个）</label><div id="taste-opts" class="flex flex-wrap gap-2"></div><p id="taste-err" class="field-error">请至少选择1个口味偏好</p></div><div><label class="block text-sm font-medium text-gray-700 mb-3">预算范围</label><div id="budget-opts" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-3">用餐地点</label><div id="location-opts" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-3">社交偏好</label><div id="social-opts" class="flex flex-wrap gap-2"></div></div></div></main><main id="page-2" class="max-w-md mx-auto px-4 pt-20 pb-24 hidden"><div class="mb-8"><h1 class="text-2xl font-bold text-gray-900">通勤偏好</h1><p class="text-base text-gray-500 mt-2">帮你找到同路的通勤搭子</p></div><div class="space-y-6"><div><label class="block text-sm font-medium text-gray-700 mb-3">居住区域</label><div id="area-opts" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-3">出发时间</label><div id="commute-time-opts" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-3">交通方式</label><div id="transport-opts" class="flex flex-wrap gap-2"></div></div></div></main><main id="page-3" class="max-w-md mx-auto px-4 pt-20 pb-24 hidden"><div class="mb-8"><h1 class="text-2xl font-bold text-gray-900">你对什么感兴趣？</h1><p class="text-base text-gray-500 mt-2">选几个标签，帮你找到同频搭子</p></div><div><label class="block text-sm font-medium text-gray-700 mb-3">兴趣标签（最多选5个）</label><div id="interest-opts" class="flex flex-wrap gap-2"></div><p id="interest-err" class="field-error">请至少选择1个兴趣标签</p></div></main><div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50"><button id="next-btn" class="w-full h-12 bg-orange-500 text-white font-medium rounded-lg">下一步</button></div></div>`;
   },
-  init() {
-    // 草稿回填：如果之前填写到一半时刷新/离开，重新进来自动恢复
+  init(params = {}) {
+    const returnTo = params.from || 'home';
     const draft = getStorage('profileDraft');
     if (draft) this.state = Object.assign({}, this.state, draft, { step: 1 });
     this.renderOpts();
-    document.getElementById('skip-btn').addEventListener('click', () => Router.navigateTo('/home'));
-    document.getElementById('next-btn').addEventListener('click', async () => {
+    document.getElementById('skip-btn').addEventListener('click', () => Router.navigateTo('/' + returnTo));
+    document.getElementById('next-btn').addEventListener('click', () => {
       if (this.state.step === 1) {
         if (!validateRequired(this.state.tastes, document.getElementById('taste-err'))) { showToast('请至少选择1个口味偏好'); return; }
         this.state.step = 2;
@@ -656,54 +775,124 @@ const ProfileInitPage = {
         document.getElementById('page-2').classList.remove('hidden');
         document.getElementById('step-1').className = 'w-8 h-1 bg-gray-200 rounded-full';
         document.getElementById('step-2').className = 'w-8 h-1 bg-orange-500 rounded-full';
+        document.getElementById('next-btn').textContent = '下一步';
+        this.renderOpts();
+      } else if (this.state.step === 2) {
+        this.state.step = 3;
+        document.getElementById('page-2').classList.add('hidden');
+        document.getElementById('page-3').classList.remove('hidden');
+        document.getElementById('step-2').className = 'w-8 h-1 bg-gray-200 rounded-full';
+        document.getElementById('step-3').className = 'w-8 h-1 bg-orange-500 rounded-full';
         document.getElementById('next-btn').textContent = '完成，开始探索';
+        this.renderOpts();
       } else {
         if (!validateRequired(this.state.interests, document.getElementById('interest-err'))) { showToast('请至少选择1个兴趣标签'); return; }
-        const btn = document.getElementById('next-btn');
-        setButtonLoading(btn, '保存中...');
-        const payload = {
-          lunchPreference: { time: this.state.time, taste: this.state.tastes, budget: this.state.budget, location: this.state.location, socialMode: this.state.social },
-          interestTags: this.state.interests,
-        };
-        // 本地也留一份,方便页面刷新前快速渲染
-        setStorage('userProfile', payload);
-        const r = await saveUserProfile(payload);
-        setButtonNormal(btn);
-        // 无后端时(mock)也算成功
+        const s = this.state;
+        setStorage('userProfile', {
+          lunchPreference: { time: s.time, taste: s.tastes, budget: s.budget, location: s.location, socialMode: s.social },
+          commutePreference: { homeArea: s.commuteArea, departureTime: s.commuteTime, transportMode: s.transport },
+          interestTags: s.interests
+        });
+        // 同步后端：lunch scene
+        saveUserProfile({
+          scene: 'lunch',
+          time_pref: s.time, taste_pref: s.tastes, budget: s.budget,
+          location_pref: s.location, social_pref: s.social, interests: s.interests,
+          commute_area: s.commuteArea, commute_time: s.commuteTime, transport: s.transport,
+        }).catch(() => {});
+        // 同步后端：commute scene
+        saveUserProfile({
+          scene: 'commute',
+          time_pref: s.commuteTime, commute_area: s.commuteArea,
+          commute_time: s.commuteTime, transport: s.transport, interests: s.interests,
+        }).catch(() => {});
         removeStorage('profileDraft');
         showToast('保存成功');
-        setTimeout(() => Router.navigateTo('/home'), 500);
+        setTimeout(() => Router.navigateTo('/' + returnTo), 500);
       }
     });
   },
   saveDraft() {
-    setStorage('profileDraft', { time: this.state.time, tastes: this.state.tastes, budget: this.state.budget, location: this.state.location, social: this.state.social, interests: this.state.interests });
+    setStorage('profileDraft', { time: this.state.time, tastes: this.state.tastes, budget: this.state.budget, location: this.state.location, social: this.state.social, commuteArea: this.state.commuteArea, commuteTime: this.state.commuteTime, transport: this.state.transport, interests: this.state.interests });
   },
   renderOpts() {
-    document.getElementById('time-opts').innerHTML = TIME_OPTIONS.map(o => `<button data-v="${o.value}" class="otime px-4 py-2 rounded-full text-sm ${o.value === this.state.time ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
-    document.getElementById('taste-opts').innerHTML = TASTE_OPTIONS.map(o => `<button data-v="${o.value}" class="otaste px-4 py-2 rounded-full text-sm ${this.state.tastes.includes(o.value) ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
-    document.getElementById('budget-opts').innerHTML = BUDGET_OPTIONS.map(o => `<button data-v="${o.value}" class="obudget px-4 py-2 rounded-full text-sm ${o.value === this.state.budget ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
-    document.getElementById('location-opts').innerHTML = LOCATION_OPTIONS.map(o => `<button data-v="${o.value}" class="olocation px-4 py-2 rounded-full text-sm ${o.value === this.state.location ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
-    document.getElementById('social-opts').innerHTML = SOCIAL_OPTIONS.map(o => `<button data-v="${o.value}" class="osocial px-4 py-2 rounded-full text-sm ${o.value === this.state.social ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
-    document.getElementById('interest-opts').innerHTML = INTEREST_OPTIONS.map(o => `<button data-v="${o.value}" class="ointerest px-4 py-2 rounded-full text-sm ${this.state.interests.includes(o.value) ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
-    document.querySelectorAll('.otime').forEach(b => b.addEventListener('click', (e) => { this.state.time = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
-    document.querySelectorAll('.otaste').forEach(b => b.addEventListener('click', (e) => { const v = e.target.dataset.v; const i = this.state.tastes.indexOf(v); i > -1 ? this.state.tastes.splice(i, 1) : this.state.tastes.length < 3 ? this.state.tastes.push(v) : showToast('最多3个'); this.renderOpts(); this.saveDraft(); }));
-    document.querySelectorAll('.obudget').forEach(b => b.addEventListener('click', (e) => { this.state.budget = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
-    document.querySelectorAll('.olocation').forEach(b => b.addEventListener('click', (e) => { this.state.location = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
-    document.querySelectorAll('.osocial').forEach(b => b.addEventListener('click', (e) => { this.state.social = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
-    document.querySelectorAll('.ointerest').forEach(b => b.addEventListener('click', (e) => { const v = e.target.dataset.v; const i = this.state.interests.indexOf(v); i > -1 ? this.state.interests.splice(i, 1) : this.state.interests.length < 5 ? this.state.interests.push(v) : showToast('最多5个'); this.renderOpts(); this.saveDraft(); }));
+    if (document.getElementById('time-opts')) {
+      document.getElementById('time-opts').innerHTML = TIME_OPTIONS.map(o => `<button data-v="${o.value}" class="otime px-4 py-2 rounded-full text-sm ${o.value === this.state.time ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
+      document.getElementById('taste-opts').innerHTML = TASTE_OPTIONS.map(o => `<button data-v="${o.value}" class="otaste px-4 py-2 rounded-full text-sm ${this.state.tastes.includes(o.value) ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
+      document.getElementById('budget-opts').innerHTML = BUDGET_OPTIONS.map(o => `<button data-v="${o.value}" class="obudget px-4 py-2 rounded-full text-sm ${o.value === this.state.budget ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
+      document.getElementById('location-opts').innerHTML = LOCATION_OPTIONS.map(o => `<button data-v="${o.value}" class="olocation px-4 py-2 rounded-full text-sm ${o.value === this.state.location ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
+      document.getElementById('social-opts').innerHTML = SOCIAL_OPTIONS.map(o => `<button data-v="${o.value}" class="osocial px-4 py-2 rounded-full text-sm ${o.value === this.state.social ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
+      document.querySelectorAll('.otime').forEach(b => b.addEventListener('click', (e) => { this.state.time = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
+      document.querySelectorAll('.otaste').forEach(b => b.addEventListener('click', (e) => { const v = e.target.dataset.v; const i = this.state.tastes.indexOf(v); i > -1 ? this.state.tastes.splice(i, 1) : this.state.tastes.length < 3 ? this.state.tastes.push(v) : showToast('最多3个'); this.renderOpts(); this.saveDraft(); }));
+      document.querySelectorAll('.obudget').forEach(b => b.addEventListener('click', (e) => { this.state.budget = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
+      document.querySelectorAll('.olocation').forEach(b => b.addEventListener('click', (e) => { this.state.location = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
+      document.querySelectorAll('.osocial').forEach(b => b.addEventListener('click', (e) => { this.state.social = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
+    }
+    if (document.getElementById('area-opts')) {
+      const COMMUTE_TIME_OPTIONS = [{ value: '07:00', label: '7:00' }, { value: '07:30', label: '7:30' }, { value: '08:00', label: '8:00' }, { value: '08:30', label: '8:30' }, { value: '09:00', label: '9:00' }];
+      document.getElementById('area-opts').innerHTML = AREA_OPTIONS.map(o => `<button data-v="${o.value}" class="oarea px-4 py-2 rounded-full text-sm ${o.value === this.state.commuteArea ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
+      document.getElementById('commute-time-opts').innerHTML = COMMUTE_TIME_OPTIONS.map(o => `<button data-v="${o.value}" class="octime px-4 py-2 rounded-full text-sm ${o.value === this.state.commuteTime ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
+      document.getElementById('transport-opts').innerHTML = TRANSPORT_OPTIONS.map(o => `<button data-v="${o.value}" class="otransport px-4 py-2 rounded-full text-sm ${o.value === this.state.transport ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
+      document.querySelectorAll('.oarea').forEach(b => b.addEventListener('click', (e) => { this.state.commuteArea = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
+      document.querySelectorAll('.octime').forEach(b => b.addEventListener('click', (e) => { this.state.commuteTime = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
+      document.querySelectorAll('.otransport').forEach(b => b.addEventListener('click', (e) => { this.state.transport = e.target.dataset.v; this.renderOpts(); this.saveDraft(); }));
+    }
+    if (document.getElementById('interest-opts')) {
+      document.getElementById('interest-opts').innerHTML = INTEREST_OPTIONS.map(o => `<button data-v="${o.value}" class="ointerest px-4 py-2 rounded-full text-sm ${this.state.interests.includes(o.value) ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
+      document.querySelectorAll('.ointerest').forEach(b => b.addEventListener('click', (e) => { const v = e.target.dataset.v; const i = this.state.interests.indexOf(v); i > -1 ? this.state.interests.splice(i, 1) : this.state.interests.length < 5 ? this.state.interests.push(v) : showToast('最多5个'); this.renderOpts(); this.saveDraft(); }));
+    }
+  }
+};
+
+// ============ 登录页 ============
+const LoginPage = {
+  render() {
+    return `<div class="login-page-bg min-h-screen flex items-center justify-center"><div class="login-decor login-decor-1"></div><div class="login-decor login-decor-2"></div><div class="login-decor login-decor-3"></div><div class="w-full max-w-sm px-6 relative z-10"><div class="text-center mb-12"><div class="login-logo-glow w-20 h-20 bg-orange-500 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">${ICONS.logo('w-10 h-10 text-white')}</div><h1 class="text-2xl font-bold text-gray-900">Mi搭子</h1><p class="text-sm text-gray-500 mt-2">Meet 你的命中搭子</p></div><button id="login-btn" class="pressable w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-md"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><span>飞书一键登录</span></button><p class="text-center text-xs text-gray-400 mt-6">用飞书账号登录，30秒完成设置</p><div class="text-center mt-16"><p class="text-xs text-gray-300">v${APP_CONFIG.version} · 小米人自己的轻社交平台</p></div></div></div>`;
+  },
+  init() {
+    document.getElementById('login-btn').addEventListener('click', () => {
+      setStorage('userInfo', { userId: 'u001', nickname: '小米同学', department: '中国区-新零售部', joinDate: '2025-07-01' });
+      showToast('登录成功');
+      setTimeout(() => Router.navigateTo('/home'), 400);
+    });
   }
 };
 
 // ============ 午餐匹配页 ============
 const MatchLunchPage = {
   render() {
-    return `<div class="bg-gray-50 min-h-screen"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><button id="back-btn" class="w-10 h-10 flex items-center justify-center"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button><h1 class="text-lg font-semibold text-gray-900">找饭搭子</h1><div class="w-10"></div></div></nav><main class="max-w-md mx-auto px-4 pt-18 pb-24"><div class="bg-white rounded-xl shadow-sm p-4 mb-4"><div class="flex items-center justify-between mb-2"><span class="text-sm text-gray-500">当前需求</span><button id="edit-pref" class="text-sm text-orange-500">修改</button></div><div class="flex flex-wrap gap-2"><span class="px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-600">12:00</span><span class="px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-600">清淡</span><span class="px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-600">20-40元</span></div></div><div class="mb-4"><h2 class="text-base font-semibold text-gray-900 mb-3">为你推荐 3 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-12 bg-white border border-orange-500 text-orange-500 font-medium rounded-lg mb-3">换一批搭子</button><button id="publish-btn" class="pressable w-full h-12 bg-white border border-gray-300 text-gray-600 font-medium rounded-lg">发布到搭子广场</button></main></div>`;
+    return `<div class="bg-gray-50 min-h-screen"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><button id="back-btn" class="w-10 h-10 flex items-center justify-center"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button><h1 class="text-lg font-semibold text-gray-900">找饭搭子</h1><div class="w-10"></div></div></nav><main class="max-w-md mx-auto px-4 pt-18 pb-24"><div class="bg-white rounded-xl shadow-sm p-4 mb-4"><div class="flex items-center justify-between mb-2"><span class="text-sm text-gray-500">当前需求</span><button id="edit-pref" class="text-sm text-orange-500">修改</button></div><div id="pref-tags" class="flex flex-wrap gap-2"></div></div><div class="mb-4"><h2 class="text-base font-semibold text-gray-900 mb-3">为你推荐 <span id="match-count">3</span> 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-12 bg-white border border-orange-500 text-orange-500 font-medium rounded-lg mb-3">换一批搭子</button><button id="publish-btn" class="pressable w-full h-12 bg-white border border-gray-300 text-gray-600 font-medium rounded-lg">发布到搭子广场</button></main>
+<!-- 修改偏好弹窗 -->
+<div id="pref-drawer">
+  <div id="pref-overlay" style="position:absolute;inset:0;"></div>
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;padding:20px;width:calc(100% - 32px);max-width:360px;">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-gray-900">修改午餐偏好</h3>
+      <button id="drawer-close" class="w-8 h-8 flex items-center justify-center text-gray-400 text-xl">×</button>
+    </div>
+    <div class="mb-4">
+      <p class="text-sm text-gray-500 mb-2">用餐时间</p>
+      <div id="drawer-time" class="flex flex-wrap gap-2"></div>
+    </div>
+    <div class="mb-4">
+      <p class="text-sm text-gray-500 mb-2">口味偏好（最多3个）</p>
+      <div id="drawer-taste" class="flex flex-wrap gap-2"></div>
+    </div>
+    <div class="mb-5">
+      <p class="text-sm text-gray-500 mb-2">预算范围</p>
+      <div id="drawer-budget" class="flex flex-wrap gap-2"></div>
+    </div>
+    <button id="drawer-confirm" class="pressable w-full h-12 bg-orange-500 text-white font-medium rounded-xl">确认，重新匹配</button>
+  </div>
+</div>
+</div>`;
   },
   init(params = {}) {
     this.forceEmpty = params && params.empty === '1';
+    this.seenUserIds = [];
+    document.getElementById('pref-drawer').style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(0,0,0,0.4);';
     document.getElementById('back-btn').addEventListener('click', () => Router.back());
-    document.getElementById('edit-pref').addEventListener('click', () => Router.navigateTo('/profile-init'));
+    document.getElementById('edit-pref').addEventListener('click', () => this.openDrawer());
     document.getElementById('change-btn').addEventListener('click', () => { document.getElementById('loading').classList.remove('hidden'); document.getElementById('loading').innerHTML = skeletonCards(2); document.getElementById('results').classList.add('hidden'); this.loadResults(); });
     document.getElementById('publish-btn').addEventListener('click', () => Router.navigateTo('/publish', { type: 'lunch' }));
     this.updatePrefDisplay();
@@ -712,44 +901,157 @@ const MatchLunchPage = {
   updatePrefDisplay() {
     const profile = getStorage('userProfile') || {};
     const pref = profile.lunchPreference || {};
-    const tags = document.querySelector('#match-results')?.previousElementSibling?.previousElementSibling?.querySelector('.flex.flex-wrap.gap-2');
+    const tags = document.getElementById('pref-tags');
     if (tags) {
       tags.innerHTML = `<span class="px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-600">${pref.time || '12:00'}</span><span class="px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-600">${(pref.taste || ['清淡']).join('·')}</span><span class="px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-600">${pref.budget || '20-40'}元</span>`;
     }
   },
+  openDrawer() {
+    const profile = getStorage('userProfile') || {};
+    const pref = profile.lunchPreference || { time: '12:00', taste: ['清淡'], budget: '20-40' };
+    const draft = { time: pref.time || '12:00', taste: [...(pref.taste || ['清淡'])], budget: pref.budget || '20-40' };
+
+    const renderDrawer = () => {
+      document.getElementById('drawer-time').innerHTML = TIME_OPTIONS.map(o =>
+        `<button data-v="${o.value}" class="dt-time px-4 py-2 rounded-full text-sm ${draft.time === o.value ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`
+      ).join('');
+      document.getElementById('drawer-taste').innerHTML = TASTE_OPTIONS.map(o =>
+        `<button data-v="${o.value}" class="dt-taste px-4 py-2 rounded-full text-sm ${draft.taste.includes(o.value) ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`
+      ).join('');
+      document.getElementById('drawer-budget').innerHTML = BUDGET_OPTIONS.map(o =>
+        `<button data-v="${o.value}" class="dt-budget px-4 py-2 rounded-full text-sm ${draft.budget === o.value ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`
+      ).join('');
+      document.querySelectorAll('.dt-time').forEach(b => b.addEventListener('click', e => { draft.time = e.target.dataset.v; renderDrawer(); }));
+      document.querySelectorAll('.dt-taste').forEach(b => b.addEventListener('click', e => {
+        const v = e.target.dataset.v;
+        const i = draft.taste.indexOf(v);
+        if (i > -1) draft.taste.splice(i, 1);
+        else if (draft.taste.length < 3) draft.taste.push(v);
+        else { showToast('最多选3个'); return; }
+        renderDrawer();
+      }));
+      document.querySelectorAll('.dt-budget').forEach(b => b.addEventListener('click', e => { draft.budget = e.target.dataset.v; renderDrawer(); }));
+    };
+
+    const close = () => { document.getElementById('pref-drawer').style.display = 'none'; };
+    document.getElementById('pref-drawer').style.display = 'block';
+    renderDrawer();
+
+    document.getElementById('pref-overlay').onclick = close;
+    document.getElementById('drawer-close').onclick = close;
+    document.getElementById('drawer-confirm').onclick = () => {
+      const profile = getStorage('userProfile') || {};
+      profile.lunchPreference = Object.assign(profile.lunchPreference || {}, { time: draft.time, taste: draft.taste, budget: draft.budget });
+      setStorage('userProfile', profile);
+      // 同步后端画像（lunch scene）
+      saveUserProfile({
+        scene: 'lunch',
+        time_pref: draft.time,
+        taste_pref: draft.taste,
+        budget: draft.budget,
+        location_pref: profile.lunchPreference?.location || '都可以',
+        social_pref: profile.lunchPreference?.socialMode || '轻松聊天',
+        interests: profile.interestTags || [],
+      }).catch(() => {});
+      close();
+      this.updatePrefDisplay();
+      this.seenUserIds = [];
+      sessionStorage.removeItem('preload_lunch');
+      sessionStorage.removeItem('preload_lunch_next');
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('loading').innerHTML = skeletonCards(2);
+      document.getElementById('results').classList.add('hidden');
+      this.loadResults();
+    };
+  },
   async loadResults() {
     try {
-      // 获取用户偏好
       const profile = getStorage('userProfile') || {};
       const preference = profile.lunchPreference || { time: '12:00', taste: ['清淡'], budget: '20-40' };
-      
-      // 调用匹配接口
-      const result = await executeMatch('lunch', preference);
-      
-      document.getElementById('loading').classList.add('hidden');
+
+      // 首次加载且有预计算缓存，直接用
+      let result;
+      const cached = sessionStorage.getItem('preload_lunch');
+      if (cached && this.seenUserIds.length === 0) {
+        result = JSON.parse(cached);
+        sessionStorage.removeItem('preload_lunch');
+        // 后台预计算下一批
+        executeMatch('lunch', preference, result.map(r => Number(r.candidate_id || r.userId || 0))).then(next => {
+          if (next && next.length > 0) sessionStorage.setItem('preload_lunch_next', JSON.stringify(next));
+        }).catch(() => {});
+      } else {
+        result = await executeMatch('lunch', preference, this.seenUserIds || []);
+      }
+
+      document.getElementById('loading')?.classList.add('hidden');
       const c = document.getElementById('results');
+      if (!c) return;
       c.classList.remove('hidden');
-      
-      const mock = (result && result.recommendations) ? result.recommendations : [];
-      
-      if (this.forceEmpty || mock.length === 0) {
-        c.innerHTML = `<div class="empty-state bg-white rounded-xl"><div class="empty-icon">🍽️</div><p class="empty-text mb-1">暂时没有匹配到合适的饭搭子</p><p class="empty-text mb-4 text-xs">可能是候选人较少，试试发布到广场主动招募</p><button id="empty-to-square" class="pressable btn btn-primary btn-sm">去搭子广场看看</button></div>`;
+
+      const mock = (result && Array.isArray(result)) ? result : (result && result.recommendations) ? result.recommendations : [];
+      const countEl = document.getElementById('match-count');
+      if (countEl) countEl.textContent = mock.length;
+      if (this.forceEmpty || mock.length === 0) {<p class="empty-text mb-1">暂时没有匹配到合适的饭搭子</p><p class="empty-text mb-4 text-xs">可能是候选人较少，试试发布到广场主动招募</p><button id="empty-to-square" class="pressable btn btn-primary btn-sm">去搭子广场看看</button></div>`;
         document.getElementById('empty-to-square').addEventListener('click', () => Router.navigateTo('/square'));
         return;
       }
-      const userBudget = preference.budget || '20-40';
       c.innerHTML = mock.map(i => {
-        const dishes = (i.recommendedDishes || []).map(id => MOCK_MENUS.find(m => m.id === id)).filter(Boolean);
-        const budgetPct = i.budgetRange ? calcBudgetOverlap(userBudget, i.budgetRange) : 0;
-        const offer = i.todayOffer ? MOCK_OFFERS.find(o => o.id === i.todayOffer) : null;
-        return `<div class="bg-white rounded-xl shadow-sm p-4 card-appear"><div class="flex items-center justify-between mb-3"><div class="flex items-center space-x-3"><div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center"><span class="text-lg font-medium text-orange-600">${(i.name || '?').charAt(0)}</span></div><div><h3 class="text-base font-semibold text-gray-900">${i.name || '搭子'}</h3><p class="text-sm text-gray-500">${i.dept || '小米同学'}</p></div></div><div class="score-ring" style="--score:${i.score || 0}"><span class="score-num">${i.score || 0}%</span></div></div><div class="flex flex-wrap gap-2 mb-3">${(i.tags || []).map(t => `<span class="px-2 py-1 rounded-full text-xs bg-green-100 text-green-600">✓ ${t}</span>`).join('')}</div><p class="text-sm text-gray-600 mb-3">${i.reason || '你们很匹配'}</p>${i.restaurant ? `<div class="p-3 bg-orange-50 rounded-lg mb-3 flex items-center justify-between"><div class="flex items-center gap-2"><span class="text-sm">🍽️</span><span class="text-sm text-gray-700">${i.restaurant.name}</span></div><span class="text-xs text-gray-500">${i.restaurant.distance} · ${i.restaurant.avgPrice}</span></div>` : ''}${dishes.length > 0 ? `<div class="mb-3"><p class="text-xs text-gray-500 mb-1.5">推荐菜品</p><div class="space-y-1">${dishes.slice(0, 3).map(d => `<div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg"><div class="flex items-center gap-2"><span class="text-sm">${d.dish}</span><span class="spicy-indicator">${spicyIcons(d.spicy)}</span></div><div class="flex items-center gap-2">${starRating(d.rating)}<span class="text-xs font-medium text-orange-500">${d.price}元</span></div></div>`).join('')}</div></div>` : ''}${i.budgetRange ? `<div class="mb-3 p-2.5 bg-gray-50 rounded-lg"><div class="flex items-center justify-between text-xs text-gray-500 mb-1"><span>预算兼容度 ${budgetPct}%</span><span>你: ${userBudget}元 · TA: ${i.budgetRange}元</span></div><div class="budget-bar"><div class="budget-bar-fill" style="width:${budgetPct}%"></div></div></div>` : ''}${offer ? `<div class="mb-3 p-2.5 bg-yellow-50 rounded-lg border border-yellow-200 flex items-center justify-between"><div><p class="text-xs font-medium text-yellow-800">🏷️ ${offer.title}</p><p class="text-xs text-yellow-600">${offer.desc}</p></div><span class="offer-countdown">⏰ ${getDaysRemaining(offer.expireDate)}天</span></div>` : ''}<div class="flex space-x-3"><button data-uid="${i.uid || i.userId}" data-match-id="${i.matchId || ''}" class="invite-btn pressable flex-1 h-10 bg-orange-500 text-white text-sm font-medium rounded-lg">邀请搭子</button><button data-uid="${i.uid || i.userId}" data-match-id="${i.matchId || ''}" class="detail-btn pressable flex-1 h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg">查看详情</button></div></div>`;
+        const name = i.nickname || i.name || '搭子';
+        const dept = i.department || i.dept || '';
+        const score = Math.min(100, Math.round((i.score || i.rule_score || 0)));
+        const uid = i.candidate_id || i.uid || i.userId || '';
+        const matchId = i.match_id || '';
+        const tags = i.commonTags || i.tags || [];
+        const reason = i.reason || '偏好相近';
+        const canteen = i.recommended_canteen;
+        const ice = i.icebreaker || {};
+        const iceHtml = ice.inviteMessage
+          ? `<div class="p-3 bg-orange-50 rounded-lg mb-3">
+            <p class="text-xs text-orange-500 mb-1">💬 邀请话术（可直接发送）</p>
+            <p class="text-sm text-orange-800">${ice.inviteMessage}</p>
+          </div>
+          ${Array.isArray(ice.icebreakerTopics) && ice.icebreakerTopics.length > 0 ? `<div class="p-3 bg-purple-50 rounded-lg mb-3">
+            <p class="text-xs text-purple-500 mb-1.5">🎯 破冰话题</p>
+            <div class="flex flex-wrap gap-1.5">${ice.icebreakerTopics.map(t => `<span class="px-2 py-0.5 bg-white rounded-full text-xs text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
+          </div>` : ''}`
+          : `<div class="p-3 bg-gray-50 rounded-lg mb-3 flex items-center gap-2"><span class="animate-spin text-sm">⏳</span><span class="text-xs text-gray-400">破冰话术生成中...</span></div>`;
+        return `<div class="bg-white rounded-xl shadow-sm p-4 mb-3 card-appear" data-match-id="${matchId}">
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center space-x-3">
+      <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+        <span class="text-lg font-medium text-orange-600">${name.charAt(0)}</span>
+      </div>
+      <div>
+        <h3 class="text-base font-semibold text-gray-900">${name}</h3>
+        <p class="text-sm text-gray-500">${dept}</p>
+      </div>
+    </div>
+    <div class="score-ring" style="--score:${score}"><span class="score-num">${score}%</span></div>
+  </div>
+  ${tags.length > 0 ? `<div class="flex flex-wrap gap-1.5 mb-2">${tags.map(t => `<span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-600">✓ ${t}</span>`).join('')}</div>` : ''}
+  <p class="text-sm text-gray-600 mb-3">💡 ${reason}</p>
+  ${canteen ? `<div class="p-3 bg-orange-50 rounded-lg mb-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2"><span>🍽️</span><span class="text-sm font-medium text-gray-800">${canteen.name}</span></div>
+      <span class="text-xs text-gray-500">${canteen.walk} · ${canteen.avgPrice}</span>
+    </div>
+    <p class="text-xs text-orange-600 mt-1">${canteen.location}</p>
+  </div>` : ''}
+  <div class="ice-section" data-match-id="${matchId}">${iceHtml}</div>
+  <div class="flex space-x-3">
+    <button data-uid="${uid}" data-match-id="${matchId}" class="invite-btn pressable flex-1 h-10 bg-orange-500 text-white text-sm font-medium rounded-lg">邀请搭子</button>
+    <button data-uid="${uid}" data-match-id="${matchId}" class="detail-btn pressable flex-1 h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg">查看详情</button>
+  </div>
+</div>`;
       }).join('');
-      c.querySelectorAll('.invite-btn,.detail-btn').forEach(b => b.addEventListener('click', (e) => {
-        const el = e.currentTarget;
-        Router.navigateTo('/invite', { userId: el.dataset.uid, matchId: el.dataset.matchId || '', scene: 'lunch' });
-      }));
+      mock.forEach(i => {
+        const uid = Number(i.candidate_id || i.uid || i.userId);
+        if (uid && !this.seenUserIds.includes(uid)) this.seenUserIds.push(uid);
+      });
+      c.querySelectorAll('.invite-btn,.detail-btn').forEach(b => b.addEventListener('click', (e) => Router.navigateTo('/invite', { userId: e.target.dataset.uid, matchId: e.target.dataset.matchId })));
+      mock.forEach(i => { if (i.match_id) pollIcebreaker(i.match_id, 'lunch'); });
     } catch (error) {
-      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('loading')?.classList.add('hidden');
       document.getElementById('results').classList.remove('hidden');
       document.getElementById('results').innerHTML = `<div class="empty-state bg-white rounded-xl"><div class="empty-icon">⚠️</div><p class="empty-text mb-1">加载失败</p><p class="empty-text mb-4 text-xs">${error.message || '请检查网络后重试'}</p><button id="retry-match" class="pressable btn btn-primary btn-sm">点击重试</button></div>`;
       document.getElementById('retry-match')?.addEventListener('click', () => this.loadResults());
@@ -760,49 +1062,240 @@ const MatchLunchPage = {
 // ============ 通勤匹配页 ============
 const MatchCommutePage = {
   render() {
-    return `<div class="bg-gray-50 min-h-screen"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><button id="back-btn" class="w-10 h-10 flex items-center justify-center"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button><h1 class="text-lg font-semibold text-gray-900">找拼车搭子</h1><div class="w-10"></div></div></nav><main class="max-w-md mx-auto px-4 pt-18 pb-24"><div class="bg-white rounded-xl shadow-sm p-4 mb-4"><div class="flex items-center justify-between mb-2"><span class="text-sm text-gray-500">当前需求</span><button id="edit-pref" class="text-sm text-blue-500">修改</button></div><div class="flex flex-wrap gap-2"><span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">08:30</span><span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">回龙观</span><span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">打车</span></div></div><div class="mb-4"><h2 class="text-base font-semibold text-gray-900 mb-3">为你推荐 3 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-12 bg-white border border-blue-500 text-blue-500 font-medium rounded-lg mb-3">换一批搭子</button><button id="publish-btn" class="pressable w-full h-12 bg-white border border-gray-300 text-gray-600 font-medium rounded-lg">发布到搭子广场</button></main></div>`;
+    const profile = getStorage('userProfile') || {};
+    const cp = profile.commutePreference || { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' };
+    const COMMUTE_TIME_OPTIONS = [
+      { value: '07:00', label: '7:00' }, { value: '07:30', label: '7:30' }, { value: '08:00', label: '8:00' },
+      { value: '08:30', label: '8:30' }, { value: '09:00', label: '9:00' },
+    ];
+    const areaOpts = AREA_OPTIONS.map(o => `<button data-v="${o.value}" class="ep-area px-3 py-1.5 rounded-full text-sm ${o.value === cp.homeArea ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
+    const timeOpts = COMMUTE_TIME_OPTIONS.map(o => `<button data-v="${o.value}" class="ep-time px-3 py-1.5 rounded-full text-sm ${o.value === cp.departureTime ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
+    const transOpts = TRANSPORT_OPTIONS.map(o => `<button data-v="${o.value}" class="ep-trans px-3 py-1.5 rounded-full text-sm ${o.value === cp.transportMode ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
+    return `<div class="bg-gray-50 min-h-screen"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><button id="back-btn" class="w-10 h-10 flex items-center justify-center"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button><h1 class="text-lg font-semibold text-gray-900">找拼车搭子</h1><div class="w-10"></div></div></nav><main class="max-w-md mx-auto px-4 pt-18 pb-24">
+<!-- 当前需求卡片 -->
+<div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+  <div class="flex items-center justify-between mb-2">
+    <span class="text-sm text-gray-500">当前需求</span>
+    <button id="edit-pref" class="text-sm text-blue-500">修改</button>
+  </div>
+  <div id="pref-tags" class="flex flex-wrap gap-2">
+    <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${cp.departureTime}</span>
+    <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${cp.homeArea}</span>
+    <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${cp.transportMode}</span>
+  </div>
+  <!-- 内联编辑面板（默认隐藏） -->
+  <div id="edit-panel" class="hidden mt-4 border-t border-gray-100 pt-4 space-y-4">
+    <div>
+      <p class="text-xs text-gray-500 mb-2">居住区域</p>
+      <div id="ep-area-opts" class="flex flex-wrap gap-2">${areaOpts}</div>
+    </div>
+    <div>
+      <p class="text-xs text-gray-500 mb-2">出发时间</p>
+      <div id="ep-time-opts" class="flex flex-wrap gap-2">${timeOpts}</div>
+    </div>
+    <div>
+      <p class="text-xs text-gray-500 mb-2">交通方式</p>
+      <div id="ep-trans-opts" class="flex flex-wrap gap-2">${transOpts}</div>
+    </div>
+    <div class="flex gap-3 pt-1">
+      <button id="ep-cancel" class="flex-1 h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg">取消</button>
+      <button id="ep-save" class="flex-1 h-10 bg-blue-500 text-white text-sm font-medium rounded-lg">保存并重新匹配</button>
+    </div>
+  </div>
+</div>
+<div class="mb-4"><h2 class="text-base font-semibold text-gray-900 mb-3">为你推荐 <span id="match-count">3</span> 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-12 bg-white border border-blue-500 text-blue-500 font-medium rounded-lg mb-3">换一批搭子</button><button id="publish-btn" class="pressable w-full h-12 bg-white border border-gray-300 text-gray-600 font-medium rounded-lg">发布到搭子广场</button></main></div>`;
   },
   init(params = {}) {
-    // 演示用：地址栏加 ?empty=1 可预览"无匹配/人数不足"兜底页，例如 #/match-commute?empty=1
     this.forceEmpty = params && params.empty === '1';
+    this.seenUserIds = [];
+
+    // 编辑面板状态
+    this._editDraft = null;
+
     document.getElementById('back-btn').addEventListener('click', () => Router.back());
-    document.getElementById('edit-pref').addEventListener('click', () => Router.navigateTo('/profile-init'));
+
+    // 打开/关闭编辑面板
+    document.getElementById('edit-pref').addEventListener('click', () => {
+      const panel = document.getElementById('edit-panel');
+      const isOpen = !panel.classList.contains('hidden');
+      if (isOpen) {
+        panel.classList.add('hidden');
+        document.getElementById('edit-pref').textContent = '修改';
+      } else {
+        panel.classList.remove('hidden');
+        document.getElementById('edit-pref').textContent = '收起';
+        // 从当前 localStorage 初始化草稿
+        const profile = getStorage('userProfile') || {};
+        const cp = profile.commutePreference || { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' };
+        this._editDraft = { ...cp };
+      }
+    });
+
+    // 选项点击：居住区域
+    document.getElementById('ep-area-opts').addEventListener('click', (e) => {
+      const btn = e.target.closest('.ep-area');
+      if (!btn) return;
+      this._editDraft.homeArea = btn.dataset.v;
+      document.querySelectorAll('.ep-area').forEach(b => {
+        b.className = b.className.replace('bg-blue-500 text-white', 'bg-gray-100 text-gray-600');
+      });
+      btn.className = btn.className.replace('bg-gray-100 text-gray-600', 'bg-blue-500 text-white');
+    });
+
+    // 选项点击：出发时间
+    document.getElementById('ep-time-opts').addEventListener('click', (e) => {
+      const btn = e.target.closest('.ep-time');
+      if (!btn) return;
+      this._editDraft.departureTime = btn.dataset.v;
+      document.querySelectorAll('.ep-time').forEach(b => {
+        b.className = b.className.replace('bg-blue-500 text-white', 'bg-gray-100 text-gray-600');
+      });
+      btn.className = btn.className.replace('bg-gray-100 text-gray-600', 'bg-blue-500 text-white');
+    });
+
+    // 选项点击：交通方式
+    document.getElementById('ep-trans-opts').addEventListener('click', (e) => {
+      const btn = e.target.closest('.ep-trans');
+      if (!btn) return;
+      this._editDraft.transportMode = btn.dataset.v;
+      document.querySelectorAll('.ep-trans').forEach(b => {
+        b.className = b.className.replace('bg-blue-500 text-white', 'bg-gray-100 text-gray-600');
+      });
+      btn.className = btn.className.replace('bg-gray-100 text-gray-600', 'bg-blue-500 text-white');
+    });
+
+    // 取消
+    document.getElementById('ep-cancel').addEventListener('click', () => {
+      document.getElementById('edit-panel').classList.add('hidden');
+      document.getElementById('edit-pref').textContent = '修改';
+    });
+
+    // 保存并刷新
+    document.getElementById('ep-save').addEventListener('click', async () => {
+      if (!this._editDraft) return;
+      const draft = this._editDraft;
+      // 写入 localStorage
+      const profile = getStorage('userProfile') || {};
+      profile.commutePreference = draft;
+      setStorage('userProfile', profile);
+      // 更新顶部标签
+      document.getElementById('pref-tags').innerHTML = `
+        <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${draft.departureTime}</span>
+        <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${draft.homeArea}</span>
+        <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${draft.transportMode}</span>
+      `;
+      // 关闭面板
+      document.getElementById('edit-panel').classList.add('hidden');
+      document.getElementById('edit-pref').textContent = '修改';
+      // 先等后端写入完成，再清缓存重新匹配
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('loading').innerHTML = skeletonCards(2);
+      document.getElementById('results').classList.add('hidden');
+      try {
+        await saveUserProfile({
+          scene: 'commute',
+          commute_area: draft.homeArea,
+          commute_time: draft.departureTime,
+          transport: draft.transportMode,
+          time_pref: draft.departureTime,
+          interests: (profile.interestTags || []),
+        });
+      } catch (e) {}
+      sessionStorage.removeItem('preload_commute');
+      sessionStorage.removeItem('preload_commute_next');
+      this.seenUserIds = [];
+      this.loadResults();
+    });
+
     document.getElementById('change-btn').addEventListener('click', () => { document.getElementById('loading').classList.remove('hidden'); document.getElementById('loading').innerHTML = skeletonCards(2); document.getElementById('results').classList.add('hidden'); this.loadResults(); });
     document.getElementById('publish-btn').addEventListener('click', () => Router.navigateTo('/publish', { type: 'commute' }));
     this.loadResults();
   },
   async loadResults() {
     try {
-      // 获取用户偏好
       const profile = getStorage('userProfile') || {};
       const preference = profile.commutePreference || { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' };
       
-      // 调用匹配接口
-      const result = await executeMatch('commute', preference);
-      
-      document.getElementById('loading').classList.add('hidden');
+      let result;
+      const cached = sessionStorage.getItem('preload_commute');
+      if (cached && this.seenUserIds.length === 0) {
+        result = JSON.parse(cached);
+        sessionStorage.removeItem('preload_commute');
+        executeMatch('commute', preference, result.map(r => Number(r.candidate_id || r.userId || 0))).then(next => {
+          if (next && next.length > 0) sessionStorage.setItem('preload_commute_next', JSON.stringify(next));
+        }).catch(() => {});
+      } else {
+        result = await executeMatch('commute', preference, this.seenUserIds || []);
+      }
+
+      document.getElementById('loading')?.classList.add('hidden');
       const c = document.getElementById('results');
+      if (!c) return;
       c.classList.remove('hidden');
-      
-      const mock = (result && result.recommendations) ? result.recommendations : [];
-      
-      if (this.forceEmpty || mock.length === 0) {
+
+      const mock = (result && Array.isArray(result)) ? result : (result && result.recommendations) ? result.recommendations : [];
+      const countEl = document.getElementById('match-count');
+      if (countEl) countEl.textContent = mock.length;
         c.innerHTML = `<div class="empty-state bg-white rounded-xl"><div class="empty-icon">🚗</div><p class="empty-text mb-1">附近暂时没有同路线的拼车搭子</p><p class="empty-text mb-4 text-xs">可以先发布到广场，等待其他人响应</p><button id="empty-to-square" class="pressable btn btn-secondary btn-sm">去搭子广场看看</button></div>`;
         document.getElementById('empty-to-square').addEventListener('click', () => Router.navigateTo('/square'));
         return;
       }
       c.innerHTML = mock.map(i => {
-        const r = i.route || {};
-        const waypoints = (r.waypoints || []);
-        const routeHtml = `<div class="route-visual mb-3"><div class="route-node"><div class="route-dot start"></div><span class="route-label">${r.from || preference.homeArea}</span></div>${waypoints.map(wp => `<div class="route-line"></div><div class="route-node"><div class="route-dot"></div><span class="route-label">${wp}</span></div>`).join('')}<div class="route-line"></div><div class="route-node"><div class="route-dot end"></div><span class="route-label">${r.to || '科技园'}</span></div></div>`;
-        return `<div class="bg-white rounded-xl shadow-sm p-4 card-appear"><div class="flex items-center justify-between mb-3"><div class="flex items-center space-x-3"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center"><span class="text-lg font-medium text-blue-600">${(i.name || '?').charAt(0)}</span></div><div><h3 class="text-base font-semibold text-gray-900">${i.name || '搭子'}</h3><p class="text-sm text-gray-500">${i.time || '-'} 出发</p></div></div><div class="score-ring score-ring-blue" style="--score:${i.score || 0}"><span class="score-num">${i.score || 0}%</span></div></div>${routeHtml}<div class="flex items-center gap-3 mb-3 text-xs text-gray-500"><span>📍 ${r.distance || '12km'}</span><span>⏱️ ${r.duration || '35分钟'}</span><span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">${r.transportMode || '打车'}</span></div><div class="savings-grid mb-3"><div class="savings-item"><p class="savings-value">${i.saving || '15元'}</p><p class="savings-label">每日节省</p></div><div class="savings-item"><p class="savings-value">${i.weeklySaving || '75元'}</p><p class="savings-label">每周节省</p></div><div class="savings-item"><p class="savings-value">${i.monthlySaving || '330元'}</p><p class="savings-label">每月节省</p></div></div><div class="flex items-center gap-3 mb-3 p-2 bg-green-50 rounded-lg text-xs"><span class="text-green-700">🌱 减碳 ${i.co2Saved || '2kg/周'}</span><span class="text-gray-300">|</span><span class="text-blue-600">时间匹配 ${i.timeScore || 90}%</span><span class="text-gray-300">|</span><span class="text-blue-600">路线匹配 ${i.routeScore || 85}%</span></div><p class="text-sm text-gray-600 mb-3">${i.reason || '你们很匹配'}</p><div class="flex space-x-3"><button data-uid="${i.uid || i.userId}" data-match-id="${i.matchId || ''}" class="invite-btn pressable flex-1 h-10 bg-blue-500 text-white text-sm font-medium rounded-lg">邀请拼车</button><button data-uid="${i.uid || i.userId}" data-match-id="${i.matchId || ''}" class="detail-btn pressable flex-1 h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg">查看详情</button></div></div>`;
+        const name = i.nickname || i.name || '搭子';
+        const dept = i.department || '';
+        const score = Math.min(100, Math.round((i.score || i.rule_score || 0)));
+        const uid = i.candidate_id || i.uid || i.userId || '';
+        const matchId = i.match_id || '';
+        const tags = i.commonTags || i.tags || [];
+        const reason = i.reason || '路线相近';
+        const commuteInfo = i.commute_info || null;
+        const iceC = i.icebreaker || {};
+        const iceHtmlC = iceC.inviteMessage
+          ? `<div class="p-3 bg-blue-50 rounded-lg mb-3">
+            <p class="text-xs text-blue-500 mb-1">💬 邀请话术（可直接发送）</p>
+            <p class="text-sm text-blue-800">${iceC.inviteMessage}</p>
+          </div>
+          ${Array.isArray(iceC.icebreakerTopics) && iceC.icebreakerTopics.length > 0 ? `<div class="p-3 bg-purple-50 rounded-lg mb-3">
+            <p class="text-xs text-purple-500 mb-1.5">🎯 破冰话题</p>
+            <div class="flex flex-wrap gap-1.5">${iceC.icebreakerTopics.map(t => `<span class="px-2 py-0.5 bg-white rounded-full text-xs text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
+          </div>` : ''}`
+          : `<div class="p-3 bg-gray-50 rounded-lg mb-3 flex items-center gap-2"><span class="animate-spin text-sm">⏳</span><span class="text-xs text-gray-400">破冰话术生成中...</span></div>`;
+        return `<div class="bg-white rounded-xl shadow-sm p-4 mb-3 card-appear" data-match-id="${matchId}">
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center space-x-3">
+      <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+        <span class="text-lg font-medium text-blue-600">${name.charAt(0)}</span>
+      </div>
+      <div>
+        <h3 class="text-base font-semibold text-gray-900">${name}</h3>
+        <p class="text-sm text-gray-500">${dept || '通勤搭子'}</p>
+      </div>
+    </div>
+    <div class="score-ring score-ring-blue" style="--score:${score}"><span class="score-num">${score}%</span></div>
+  </div>
+  ${tags.length > 0 ? `<div class="flex flex-wrap gap-1.5 mb-2">${tags.map(t => `<span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-600">✓ ${t}</span>`).join('')}</div>` : ''}
+  <p class="text-sm text-gray-600 mb-3">💡 ${reason}</p>
+  ${commuteInfo ? `<div class="p-3 bg-blue-50 rounded-lg mb-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2"><span>🚗</span><span class="text-sm font-medium text-gray-800">${commuteInfo.area || ''} 出发</span></div>
+      <span class="text-xs text-gray-500">${commuteInfo.time || ''} · ${commuteInfo.transport || ''}</span>
+    </div>
+  </div>` : ''}
+  <div class="ice-section" data-match-id="${matchId}">${iceHtmlC}</div>
+  <div class="flex space-x-3">
+    <button data-uid="${uid}" data-match-id="${matchId}" class="invite-btn pressable flex-1 h-10 bg-blue-500 text-white text-sm font-medium rounded-lg">邀请拼车</button>
+    <button data-uid="${uid}" data-match-id="${matchId}" class="detail-btn pressable flex-1 h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg">查看详情</button>
+  </div>
+</div>`;
       }).join('');
-      c.querySelectorAll('.invite-btn,.detail-btn').forEach(b => b.addEventListener('click', (e) => {
-        const el = e.currentTarget;
-        Router.navigateTo('/invite', { userId: el.dataset.uid, matchId: el.dataset.matchId || '', scene: 'commute' });
-      }));
+      mock.forEach(i => {
+        const uid = Number(i.candidate_id || i.uid || i.userId);
+        if (uid && !this.seenUserIds.includes(uid)) this.seenUserIds.push(uid);
+      });
+      c.querySelectorAll('.invite-btn,.detail-btn').forEach(b => b.addEventListener('click', (e) => Router.navigateTo('/invite', { userId: e.target.dataset.uid, matchId: e.target.dataset.matchId })));
+      mock.forEach(i => { if (i.match_id) pollIcebreaker(i.match_id, 'commute'); });
     } catch (error) {
-      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('loading')?.classList.add('hidden');
       document.getElementById('results').classList.remove('hidden');
       document.getElementById('results').innerHTML = `<div class="empty-state bg-white rounded-xl"><div class="empty-icon">⚠️</div><p class="empty-text mb-1">加载失败</p><p class="empty-text mb-4 text-xs">${error.message || '请检查网络后重试'}</p><button id="retry-match" class="pressable btn btn-secondary btn-sm">点击重试</button></div>`;
       document.getElementById('retry-match')?.addEventListener('click', () => this.loadResults());
@@ -833,36 +1326,96 @@ const InvitePage = {
     return `<div class="bg-gray-50 min-h-screen"><nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50"><div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between"><button id="back-btn" class="w-10 h-10 flex items-center justify-center"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button><h1 class="text-lg font-semibold text-gray-900">邀请搭子</h1><div class="w-10"></div></div></nav><main class="max-w-md mx-auto px-4 pt-18 pb-24 space-y-4"><div class="bg-white rounded-xl shadow-sm p-4"><div class="flex items-center space-x-4"><div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center"><span class="text-2xl font-medium text-orange-600">${t.name.charAt(0)}</span></div><div class="flex-1"><h2 class="text-xl font-semibold text-gray-900">${t.name}</h2><p class="text-sm text-gray-500 mt-1">${t.dept}</p><p class="text-sm text-gray-500 mt-1">兴趣：${t.interests.join('、')}</p></div><div class="score-ring" style="--score:${t.score}"><span class="score-num">${t.score}%</span></div></div></div><div class="bg-white rounded-xl shadow-sm p-4"><div class="flex items-center justify-between mb-3"><h3 class="text-base font-semibold text-gray-900 flex items-center gap-1.5">${ICONS.robot('w-5 h-5 text-orange-500')}<span>AI帮你写好了邀请话术</span></h3><button id="refresh-invite" class="text-sm text-orange-500">换一个</button></div><div id="invite-msg" class="ai-border bg-orange-50 rounded-lg p-4 mb-3"><p class="text-sm text-gray-700 leading-relaxed">"我今天12:30准备去食堂吃饭，看到我们都喜欢清淡口味，也都对${t.interests[0] || 'AI'}挺感兴趣，要不要一起拼个饭？"</p></div><button id="copy-invite" class="w-full h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg flex items-center justify-center space-x-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg><span>复制话术</span></button></div><div class="bg-white rounded-xl shadow-sm p-4"><div class="flex items-center justify-between mb-3"><h3 class="text-base font-semibold text-gray-900 flex items-center gap-1.5">${ICONS.chat('w-5 h-5 text-orange-500')}<span>破冰话题</span></h3><button id="refresh-ice" class="text-sm text-orange-500">换一批</button></div><div id="ice-topics" class="space-y-3"><div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"><span class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">1</span><p class="text-sm text-gray-700">你最近有没有用到比较好用的${t.interests[0] || 'AI'}工具？</p></div><div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"><span class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">2</span><p class="text-sm text-gray-700">你觉得园区附近哪家店最不踩雷？</p></div><div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"><span class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">3</span><p class="text-sm text-gray-700">入职以来你印象最深的一件事是什么？</p></div></div><button id="copy-ice" class="w-full h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg flex items-center justify-center space-x-2 mt-3"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg><span>复制话题</span></button></div><button id="send-invite" class="w-full h-12 bg-orange-500 text-white font-medium rounded-lg shadow-md">发送邀请给${t.name}</button></main></div>`;
   },
   init(params) {
+    const t = this.getTargetUser(params);
+    const matchId = params && params.matchId;
+
+    // 用已生成的 icebreaker 替换初始静态内容
+    if (matchId) {
+      request(`/api/match/icebreaker/${matchId}`, { method: 'GET' }).then(res => {
+        if (res && res.inviteMessage) {
+          document.getElementById('invite-msg').innerHTML = `<p class="text-sm text-gray-700 leading-relaxed">"${res.inviteMessage}"</p>`;
+        }
+        if (res && Array.isArray(res.icebreakerTopics) && res.icebreakerTopics.length > 0) {
+          document.getElementById('ice-topics').innerHTML = res.icebreakerTopics.map((topic, i) =>
+            `<div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+              <span class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">${i + 1}</span>
+              <p class="text-sm text-gray-700">${topic}</p>
+            </div>`
+          ).join('');
+        }
+      }).catch(() => {});
+    }
+
     document.getElementById('back-btn').addEventListener('click', () => Router.back());
-    document.getElementById('copy-invite').addEventListener('click', () => { navigator.clipboard.writeText(document.getElementById('invite-msg').textContent); showToast('已复制到剪贴板'); });
+
+    document.getElementById('copy-invite').addEventListener('click', () => {
+      const text = document.getElementById('invite-msg').querySelector('p')?.textContent || document.getElementById('invite-msg').textContent;
+      navigator.clipboard.writeText(text.replace(/^"|"$/g, ''));
+      showToast('已复制到剪贴板');
+    });
+
     document.getElementById('copy-ice').addEventListener('click', () => {
       const topics = document.querySelectorAll('#ice-topics p');
       const text = Array.from(topics).map((p, i) => `${i + 1}. ${p.textContent}`).join('\n');
-      navigator.clipboard.writeText(text); showToast('已复制到剪贴板');
+      navigator.clipboard.writeText(text);
+      showToast('已复制到剪贴板');
     });
-    document.getElementById('send-invite').addEventListener('click', async () => {
-      const btn = document.getElementById('send-invite');
-      if (btn.disabled) return;
-      setButtonLoading(btn, '发送中...');
-      const uid = params && params.userId;
-      const matchId = params && params.matchId;
-      const scene = (params && params.scene) || 'lunch';
-      const inviteMessage = document.getElementById('invite-msg')?.textContent?.trim() || '';
+
+    // 换一个话术 — 重新调 MiMo 生成
+    document.getElementById('refresh-invite').addEventListener('click', async () => {
+      const btn = document.getElementById('refresh-invite');
+      btn.textContent = '生成中...';
+      btn.disabled = true;
       try {
-        const r = await request('/api/match/invite', {
-          method: 'POST',
-          body: { targetUserId: uid, matchId, scene, inviteMessage },
-        });
-        if (r !== null) {
-          showToast('邀请已发送，对方将收到飞书消息');
-          setTimeout(() => Router.navigateTo('/home'), 1500);
-        } else {
-          setButtonNormal(btn);
+        if (matchId) {
+          const res = await request(`/api/match/icebreaker/${matchId}/regenerate`, { method: 'POST' });
+          if (res && res.inviteMessage) {
+            document.getElementById('invite-msg').innerHTML = `<p class="text-sm text-gray-700 leading-relaxed">"${res.inviteMessage}"</p>`;
+            btn.textContent = '换一个';
+            btn.disabled = false;
+            return;
+          }
         }
+        showToast('无法重新生成，请返回重新匹配');
       } catch (e) {
-        setButtonNormal(btn);
-        showToast('发送失败，请重试');
+        showToast('生成失败，请重试');
       }
+      btn.textContent = '换一个';
+      btn.disabled = false;
+    });
+
+    // 换一批话题 — 重新调 MiMo 生成
+    document.getElementById('refresh-ice').addEventListener('click', async () => {
+      const btn = document.getElementById('refresh-ice');
+      btn.textContent = '生成中...';
+      btn.disabled = true;
+      try {
+        if (matchId) {
+          const res = await request(`/api/match/icebreaker/${matchId}/regenerate`, { method: 'POST' });
+          if (res && Array.isArray(res.icebreakerTopics) && res.icebreakerTopics.length > 0) {
+            document.getElementById('ice-topics').innerHTML = res.icebreakerTopics.map((topic, i) =>
+              `<div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                <span class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">${i + 1}</span>
+                <p class="text-sm text-gray-700">${topic}</p>
+              </div>`
+            ).join('');
+            btn.textContent = '换一批';
+            btn.disabled = false;
+            return;
+          }
+        }
+        showToast('无法重新生成，请返回重新匹配');
+      } catch (e) {
+        showToast('生成失败，请重试');
+      }
+      btn.textContent = '换一批';
+      btn.disabled = false;
+    });
+
+    document.getElementById('send-invite').addEventListener('click', () => {
+      const btn = document.getElementById('send-invite');
+      setButtonLoading(btn, '发送中...');
+      setTimeout(() => { showToast('邀请已发送，对方将收到飞书消息'); setTimeout(() => Router.navigateTo('/home'), 1500); }, 1000);
     });
   }
 };
@@ -968,23 +1521,7 @@ const SquarePage = {
       return;
     }
     listEl.innerHTML = visible.map(p => { const c = TYPE_META[p.type] || TYPE_META.lunch; return `<div class="bg-white rounded-xl shadow-sm p-4 card-appear"><div class="flex items-center justify-between mb-3"><div class="flex items-center space-x-3"><div class="w-10 h-10 ${c.bg} rounded-full flex items-center justify-center"><span class="text-sm ${c.text}">${p.name.charAt(0)}</span></div><div><h3 class="text-sm font-semibold text-gray-900">${p.name}</h3><p class="text-xs text-gray-500">${p.time} · ${p.respondCount > 0 ? `已有${p.respondCount}人响应` : '等待响应'}</p></div></div><span class="px-2 py-1 rounded-full text-xs ${c.bg} ${c.text} flex items-center gap-1">${c.icon('w-3.5 h-3.5')}<span>${c.label}</span></span></div><p class="text-sm text-gray-700 mb-3">${p.contentText}</p><button data-id="${p.id}" class="respond-btn pressable w-full h-9 ${c.btn} text-white text-sm font-medium rounded-lg">我要加入</button></div>`; }).join('');
-    document.querySelectorAll('.respond-btn').forEach(b => b.addEventListener('click', async (e) => {
-      const btn = e.currentTarget;
-      if (btn.disabled) return;
-      btn.disabled = true;
-      const oldText = btn.textContent;
-      btn.textContent = '响应中...';
-      btn.classList.add('opacity-60');
-      const r = await respondToPlaza(btn.dataset.id);
-      if (r !== null) {
-        btn.textContent = '已响应，等待确认';
-        showToast('响应成功，等待对方确认');
-      } else {
-        btn.textContent = oldText;
-        btn.disabled = false;
-        btn.classList.remove('opacity-60');
-      }
-    }));
+    document.querySelectorAll('.respond-btn').forEach(b => b.addEventListener('click', (e) => { const btn = e.currentTarget; if (btn.disabled) return; btn.disabled = true; btn.textContent = '已响应，等待确认'; btn.classList.add('opacity-60'); showToast('响应成功，等待对方确认'); }));
     if (this.state.hasMore) { loadMoreBtn.classList.remove('hidden'); } else { loadMoreBtn.classList.add('hidden'); }
   },
   formatContent(content, type) {
@@ -1044,16 +1581,13 @@ const ProfilePage = {
   init() {
     const u = getStorage('userInfo');
     if (!u) { Router.navigateTo('/login'); return; }
-    if (!u.department && !u.seatNumber) {
-      // 老数据的兜底,新的模拟登录会正确带上 seatNumber
+    if (!u.department || u.department === '产品部') {
       u.department = '中国区-新零售部';
       setStorage('userInfo', u);
     }
     if (u.nickname) document.getElementById('user-avatar').textContent = u.nickname.charAt(0);
     document.getElementById('user-name').textContent = u.nickname || '小米同学';
-    // 优先显示工位号(模拟登录场景),否则显示部门
-    const subline = u.seatNumber || u.department || '中国区-新零售部';
-    document.getElementById('user-dept').textContent = subline;
+    document.getElementById('user-dept').textContent = u.department || '中国区-新零售部';
     const profile = MOCK_PROFILES['u001'];
     const tagEl = document.getElementById('personality-tags');
     if (profile && tagEl) {
@@ -1064,15 +1598,7 @@ const ProfilePage = {
     }
     document.getElementById('back-btn').addEventListener('click', () => Router.back());
     document.getElementById('edit-btn').addEventListener('click', () => showToast('编辑功能开发中'));
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-      removeStorage('userInfo');
-      removeStorage('userProfile');
-      removeStorage('devUser');
-      try {
-        await fetch(`${BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
-      } catch {}
-      Router.navigateTo('/login');
-    });
+    document.getElementById('logout-btn').addEventListener('click', () => { removeStorage('userInfo'); removeStorage('userProfile'); Router.navigateTo('/login'); });
     this.loadStats();
     this.loadMyNeeds();
     this.loadMyBuddies();
@@ -1169,16 +1695,8 @@ const PublishPage = {
       if (this.state.type === 'commute' && !validateRequired(this.state.commute.area, document.getElementById('farea-err'))) { showToast('请选择居住区域'); return; }
       if (this.state.type === 'weekend' && !validateRequired(this.state.weekend.activity, document.getElementById('factivity-err'))) { showToast('请选择活动类型'); return; }
       setButtonLoading(btn, '发布中...');
-      // 后端 content 字段是对象(存 JSON),不要在这里 stringify
-      const rawContent = { lunch: this.state.lunch, commute: this.state.commute, weekend: this.state.weekend }[this.state.type];
-      // 字段名对齐前端广场页的读取(taste/socialMode/homeArea/departureTime/transportMode/activity/description)
-      let content = { ...rawContent };
-      if (this.state.type === 'commute') {
-        content = { homeArea: rawContent.area, departureTime: rawContent.time, transportMode: rawContent.transport };
-      } else if (this.state.type === 'lunch') {
-        content = { time: rawContent.time, taste: rawContent.taste, budget: rawContent.budget, socialMode: rawContent.socialMode || '轻松聊天' };
-      }
-      const publishData = { scene: this.state.type, content, time_pref: this.state.type === 'lunch' ? this.state.lunch.time : this.state.type === 'commute' ? this.state.commute.time : this.state.weekend.time };
+      const contentMap = { lunch: this.state.lunch, commute: this.state.commute, weekend: this.state.weekend };
+      const publishData = { scene: this.state.type, content: JSON.stringify(contentMap[this.state.type]), time_pref: this.state.type === 'lunch' ? this.state.lunch.time : this.state.type === 'commute' ? this.state.commute.time : this.state.weekend.time };
       try {
         const result = await publishToPlaza(publishData);
         if (result !== null) { removeStorage('publishDraft'); showToast('发布成功'); Router.navigateTo('/square'); } else { setButtonNormal(btn); }
@@ -1229,7 +1747,7 @@ const PublishPage = {
     document.getElementById('ftaste').innerHTML = TASTE_OPTIONS.map(o => `<button data-v="${o.value}" class="otaste px-4 py-2 rounded-full text-sm ${this.state.lunch.taste.includes(o.value) ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
     document.getElementById('fbudget').innerHTML = BUDGET_OPTIONS.map(o => `<button data-v="${o.value}" class="obudget px-4 py-2 rounded-full text-sm ${o.value === this.state.lunch.budget ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
     document.getElementById('farea').innerHTML = AREA_OPTIONS.map(o => `<button data-v="${o.value}" class="oarea px-4 py-2 rounded-full text-sm ${o.value === this.state.commute.area ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.label}</button>`).join('');
-    document.getElementById('fctime').innerHTML = [{ v: '07:30' }, { v: '08:00' }, { v: '08:30' }, { v: '09:00' }].map(o => `<button data-v="${o.v}" class="octime px-4 py-2 rounded-full text-sm ${o.v === this.state.commute.time ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.v}</button>`).join('');
+    document.getElementById('fctime').innerHTML = [{ v: '07:00' }, { v: '07:30' }, { v: '08:00' }, { v: '08:30' }, { v: '09:00' }].map(o => `<button data-v="${o.v}" class="octime px-4 py-2 rounded-full text-sm ${o.v === this.state.commute.time ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.v}</button>`).join('');
     document.getElementById('ftransport').innerHTML = TRANSPORT_OPTIONS.map(o => `<button data-v="${o.value}" class="otransport px-4 py-2 rounded-full text-sm ${o.value === this.state.commute.transport ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
     document.getElementById('factivity').innerHTML = WEEKEND_ACTIVITY_OPTIONS.map(o => `<button data-v="${o.value}" class="oactivity px-3 py-2 rounded-lg text-sm border ${o.value === this.state.weekend.activity ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
     document.getElementById('fwtime').innerHTML = ['周六 9:00', '周六 14:00', '周日 9:00', '周日 14:00'].map(t => `<button data-v="${t}" class="owtime px-4 py-2 rounded-full text-sm ${t === this.state.weekend.time ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600'}">${t}</button>`).join('');
@@ -1329,14 +1847,13 @@ const DailyPage = {
       </div>
     </main></div>`;
   },
-  async init() {
+  init() {
     document.getElementById('back-btn').addEventListener('click', () => Router.back());
     document.getElementById('refresh-daily').addEventListener('click', () => this.loadRecommendation());
     this.state = { menuFilter: 'all', fortuneRevealed: false };
     this.initFortuneCards();
-    // 先 loadMenu 让 this._menus 就绪,再 loadRecommendation 才能查到菜品详情
-    await this.loadMenu();
     this.loadRecommendation();
+    this.loadMenu();
     this.loadOffers();
   },
   async loadRecommendation() {
@@ -1356,11 +1873,9 @@ const DailyPage = {
 
     if (rec.suggestedRestaurant) {
       const rest = rec.suggestedRestaurant;
-      // 优先从后端菜单查(this._menus loadMenu 后填充);兜底走 MOCK_MENUS
-      const menuSource = this._menus && this._menus.length ? this._menus : (typeof MOCK_MENUS !== 'undefined' ? MOCK_MENUS : []);
-      const dishes = (rec.suggestedDishes || []).map(id => menuSource.find(m => m.id === id)).filter(Boolean);
+      const dishes = (rec.suggestedDishes || []).map(id => MOCK_MENUS.find(m => m.id === id)).filter(Boolean);
       document.getElementById('daily-restaurant').classList.remove('hidden');
-      document.getElementById('restaurant-content').innerHTML = `<div class="flex items-center justify-between mb-3"><div><p class="text-sm font-semibold text-gray-900">${rest.name}</p><p class="text-xs text-gray-500">${rest.distance} · 人均${rest.avgPrice}</p></div></div>${dishes.length > 0 ? `<div class="space-y-1.5"><p class="text-xs text-gray-500 mb-1">今日推荐菜品</p>${dishes.map(d => `<div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg"><div class="flex items-center gap-2"><span class="text-sm font-medium">${d.dish}</span><span class="spicy-indicator">${spicyIcons(d.spicy)}</span></div><div class="flex items-center gap-2"><span class="text-xs font-medium text-orange-500">${d.price != null ? d.price + '元' : '时价'}</span></div></div>`).join('')}</div>` : ''}`;
+      document.getElementById('restaurant-content').innerHTML = `<div class="flex items-center justify-between mb-3"><div><p class="text-sm font-semibold text-gray-900">${rest.name}</p><p class="text-xs text-gray-500">${rest.distance} · 人均${rest.avgPrice}</p></div></div>${dishes.length > 0 ? `<div class="space-y-1.5"><p class="text-xs text-gray-500 mb-1">今日推荐菜品</p>${dishes.map(d => `<div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg"><div class="flex items-center gap-2"><span class="text-sm font-medium">${d.dish}</span><span class="spicy-indicator">${spicyIcons(d.spicy)}</span></div><div class="flex items-center gap-2">${starRating(d.rating)}<span class="text-xs font-medium text-orange-500">${d.price}元</span></div></div>`).join('')}</div>` : ''}`;
     }
   },
   async loadMenu() {
@@ -1459,17 +1974,14 @@ function showFeedbackModal(info) {
     if (!rating) { showToast('请先选择一个评价'); return; }
     const btn = overlay.querySelector('#feedback-submit');
     setButtonLoading(btn, '提交中...');
-    // 后端 rating 是 1-5 星: good→5, bad→2
-    const ratingNum = rating === 'good' ? 5 : 2;
-    await submitFeedback({ matchId: info.matchId, rating: ratingNum, note: overlay.querySelector('#feedback-note').value });
+    await submitFeedback({ matchId: info.matchId, rating, note: overlay.querySelector('#feedback-note').value });
     showToast('感谢反馈，会用来优化下次匹配');
     close();
   });
 }
 
 // ============ 应用初始化 ============
-document.addEventListener('DOMContentLoaded', function() {
-  // 监听DOM变化，自动替换头像
+document.addEventListener('DOMContentLoaded', function() {  // 监听DOM变化，自动替换头像
   const avatarObserver = new MutationObserver(() => hydrateAvatarPhotos());
   avatarObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
   

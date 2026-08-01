@@ -4,117 +4,173 @@
  */
 const axios = require('axios');
 
-const MIMO_API_URL = process.env.MIMO_API_URL || '';
+const MIMO_API_URL = process.env.MIMO_API_URL || 'https://api.xiaomimimo.com/v1';
 const MIMO_API_KEY = process.env.MIMO_API_KEY || '';
 
-async function _callMiMo(prompt, temperature = 0.7) {
-  // TODO: 接入真实 MiMo API
-  // const resp = await axios.post(MIMO_API_URL, {
-  //   prompt, temperature
-  // }, {
-  //   headers: { Authorization: `Bearer ${MIMO_API_KEY}` },
-  //   timeout: 10000,
-  // });
-  // return resp.data.text;
-  return '{"placeholder": "MiMo API 待接入"}';
+async function _callMiMo(systemPrompt, userPrompt, temperature = 0.7) {
+  const resp = await axios.post(
+    `${MIMO_API_URL}/responses`,
+    {
+      model: 'mimo-v2.5',
+      instructions: systemPrompt,
+      input: userPrompt,
+      max_output_tokens: 300,
+      reasoning: { effort: 'none' },
+      text: { format: { type: 'json_object' } },
+    },
+    {
+      headers: {
+        'api-key': MIMO_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      timeout: 30000,
+    }
+  );
+  const text = resp.data.output_text || resp.data.output?.[0]?.content?.[0]?.text || '';
+  console.log('[MIMO] output_text:', text.slice(0, 300));
+  return text;
 }
 
-/** ① 画像理解：将用户原始偏好整合为结构化画像 */
+function _extractJSON(text) {
+  const match = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+  return match ? match[1] || match[0] : text;
+}
+
+/** ① About Me 画像解析：提取用户个性标签与匹配优先级 */
 async function understandProfile(rawPrefs) {
-  const prompt = `你是"Mi搭子"的画像理解引擎。
-用户原始偏好：${JSON.stringify(rawPrefs)}
-请输出结构化画像 JSON：persona, matchPriority, avoidTags`;
+  const sys = `You are a user profile analysis engine for "Mi搭子", a workplace social app.
+Extract structured profile data from user preferences and About Me text.
+Output ONLY valid JSON, no explanation, no markdown.
+Output format: {"persona":"one sentence describing social style (Chinese, ≤20 chars)","matchPriority":["up to 3 from: 口味,时间,地点,社交风格,兴趣爱好,通勤路线"],"avoidTags":["up to 3 incompatible tags, or empty"],"personalityTags":["up to 5 personality tags from about_me"]}`;
+
+  const user = `User data: ${JSON.stringify(rawPrefs)}
+Output the JSON profile:`;
+
   try {
-    return JSON.parse(await _callMiMo(prompt));
+    return JSON.parse(_extractJSON(await _callMiMo(sys, user, 0.5)));
   } catch {
-    return { persona: '', matchPriority: [], avoidTags: [] };
+    return { persona: '', matchPriority: [], avoidTags: [], personalityTags: [] };
   }
 }
 
-/** ② 匹配精排：对初筛候选人打分排序，生成推荐理由
- *  MiMo 未接入时,fallback 用 rule_score 直接生成理由/标签
- */
+/** ② 搭子匹配打分 + 生成推荐理由 */
 async function matchCandidates(profileA, candidates, scene) {
-  const hasMiMo = MIMO_API_URL && MIMO_API_KEY && !MIMO_API_KEY.startsWith('your-');
-  if (!hasMiMo) {
-    return candidates.map(c => ({
-      candidate_id: c.user_id,
-      score: c.rule_score,
-      reason: buildFallbackReason(profileA, c, scene),
-      commonTags: buildFallbackTags(profileA, c, scene),
-    }));
-  }
+  const sceneDesc = scene === 'commute' ? 'commute carpool (通勤拼车)' : 'lunch buddy (午餐拼桌)';
+  const weightHint = scene === 'commute'
+    ? 'route overlap 35%, departure time 35%, interests 15%, social style 15%'
+    : 'taste match 20%, meal time 30%, location 15%, interests 15%, social style 20%';
 
-  const prompt = `你是"Mi搭子"的智能匹配引擎。用户正在找【${scene}】搭子。
-用户画像：${JSON.stringify(profileA)}
-候选人列表：${JSON.stringify(candidates)}
-请为每位候选人打分(0-100)，输出 JSON 数组：candidate_id, score, reason, commonTags`;
+  const sys = `You are an intelligent matching engine for "Mi搭子" workplace social app.
+Scene: ${sceneDesc}
+Scoring weights: ${weightHint}
+Rules:
+- score: 0-100, realistic scores reflecting actual compatibility, do NOT give everyone high scores
+- reason: natural Chinese explanation mentioning specific common points, ≤20 chars, casual tone
+- commonTags: up to 3 specific shared tags (e.g. "都爱火锅","地铁2号线")
+Output ONLY a valid JSON array, no explanation.`;
+
+  const user = `My profile: ${JSON.stringify(profileA)}
+Candidates: ${JSON.stringify(candidates)}
+Output: [{"candidate_id":"","score":0,"reason":"","commonTags":[]}]`;
+
   try {
-    const parsed = JSON.parse(await _callMiMo(prompt));
-    return Array.isArray(parsed) ? parsed : [];
+    return JSON.parse(_extractJSON(await _callMiMo(sys, user, 0.6)));
   } catch {
-    return candidates.map(c => ({
-      candidate_id: c.user_id, score: c.rule_score, reason: '', commonTags: [],
-    }));
+    return [];
   }
 }
 
-function buildFallbackReason(me, c, scene) {
-  const bits = [];
-  const cp = c.profile || {};
-  if (scene === 'lunch') {
-    if (me.time_pref && cp.time_pref && me.time_pref === cp.time_pref) bits.push(`都在 ${me.time_pref} 用餐`);
-    if (me.social_pref && cp.social_pref && me.social_pref === cp.social_pref) bits.push(`都喜欢${me.social_pref}`);
-  } else if (scene === 'commute') {
-    if (me.commute_area && cp.commute_area && me.commute_area === cp.commute_area) bits.push(`都住在${me.commute_area}`);
-    if (me.transport && cp.transport && me.transport === cp.transport) bits.push(`都习惯${me.transport}`);
-  }
-  const parseArr = v => { try { return Array.isArray(v) ? v : JSON.parse(v || '[]'); } catch { return []; } };
-  const overlap = parseArr(me.interests).filter(t => parseArr(cp.interests).includes(t));
-  if (overlap.length) bits.push(`兴趣重合: ${overlap.slice(0, 3).join('、')}`);
-  return bits.length ? bits.join(',') : '和 ta 试试看';
-}
+/** ③-A 午餐破冰话术生成 */
+async function generateLunchIcebreaker(profileA, profileB) {
+  const parseArr = v => {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string' && v.startsWith('[')) { try { return JSON.parse(v); } catch {} }
+    return [];
+  };
+  const pick = p => ({
+    dept: (p.department || '').replace('中国区-', '').replace('手机部-', ''),
+    about: p.about_me || '',
+    interests: parseArr(p.interests).join('/'),
+    taste: parseArr(p.taste_pref).join('/'),
+    time: p.time_pref || '',
+  });
+  const aP = pick(profileA);
+  const bP = pick(profileB);
 
-function buildFallbackTags(me, c, scene) {
-  const tags = [];
-  const cp = c.profile || {};
-  const parseArr = v => { try { return Array.isArray(v) ? v : JSON.parse(v || '[]'); } catch { return []; } };
-  if (scene === 'lunch') {
-    const taste = parseArr(cp.taste_pref);
-    if (taste.length) tags.push(`${taste[0]}口味`);
-    if (cp.time_pref) tags.push(`${cp.time_pref}用餐`);
-    if (cp.social_pref) tags.push(cp.social_pref);
-  } else {
-    if (cp.commute_area) tags.push(cp.commute_area);
-    if (cp.commute_time) tags.push(`${cp.commute_time}出发`);
-    if (cp.transport) tags.push(cp.transport);
-  }
-  return tags.slice(0, 3);
-}
+  const sys = `你是职场社交App的话术生成器，帮用户写午餐邀请消息。
+inviteMessage写法：像真人发微信一样自然，找到一个具体的共同点（口味/时间/兴趣/部门）作为邀请理由，语气轻松友好不客套，不超过40字，只聊吃饭，不提居住地或通勤。
+icebreakerTopics写法：生成2个开放式问题，每个问题要基于某一个具体的共同点或对方的某个特点来提问，让对方有话说，像朋友之间自然聊天，不要泛泛问"你喜欢什么"这种，要有具体切入点。`;
 
-/** ③ 破冰话术生成 */
-async function generateIcebreaker(profileA, profileB, scene) {
-  const prompt = `你是职场轻社交破冰助手。
-用户A：${JSON.stringify(profileA)}
-用户B：${JSON.stringify(profileB)}
-场景：${scene}
-请输出 JSON：inviteMessage, icebreakerTopics`;
+  const user = `发起人：部门=${aP.dept}，自我介绍=${aP.about}，兴趣=${aP.interests}，口味=${aP.taste}，用餐时间=${aP.time}
+被邀请人：部门=${bP.dept}，自我介绍=${bP.about}，兴趣=${bP.interests}，口味=${bP.taste}，用餐时间=${bP.time}
+输出：{"inviteMessage":"","icebreakerTopics":["",""]}`;
+
   try {
-    return JSON.parse(await _callMiMo(prompt));
-  } catch {
-    return { inviteMessage: '', icebreakerTopics: [] };
+    const raw = await _callMiMo(sys, user, 0.8);
+    console.log('[MIMO-LUNCH] raw:', raw?.slice(0, 300));
+    const parsed = JSON.parse(_extractJSON(raw));
+    if (!parsed.inviteMessage) throw new Error('empty inviteMessage');
+    return parsed;
+  } catch (e) {
+    console.warn('[MIMO-LUNCH] 失败:', e.message);
+    return { inviteMessage: '嘿，要不要一起？', icebreakerTopics: [] };
   }
 }
 
-/** ④ 每日幸运推荐 */
+/** ③-B 通勤拼车破冰话术生成 */
+async function generateCommuteIcebreaker(profileA, profileB) {
+  const parseArr = v => {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string' && v.startsWith('[')) { try { return JSON.parse(v); } catch {} }
+    return [];
+  };
+  const pick = p => ({
+    dept: (p.department || '').replace('中国区-', '').replace('手机部-', ''),
+    about: p.about_me || '',
+    interests: parseArr(p.interests).join('/'),
+    area: p.commute_area || '',
+    time: p.commute_time || p.time_pref || '',
+    transport: p.transport || '',
+  });
+  const aP = pick(profileA);
+  const bP = pick(profileB);
+
+  const sys = `你是职场社交App的话术生成器，帮用户写通勤拼车邀请消息。
+inviteMessage写法：像真人发微信一样口语化，找到路线或时间上的具体共同点作为理由，可以提交通方式或顺路这件事，语气轻松随意不正式，不超过40字，只聊通勤，不提吃饭或食堂。
+icebreakerTopics写法：生成2个开放式问题，从对方的兴趣/部门/通勤经历里找切入点来提问，让对方有话说，像路上随口聊起来的感觉，不要泛泛问"你平时喜欢什么"。`;
+
+  const user = `发起人：部门=${aP.dept}，自我介绍=${aP.about}，兴趣=${aP.interests}，出发地=${aP.area}，出发时间=${aP.time}，交通方式=${aP.transport}
+被邀请人：部门=${bP.dept}，自我介绍=${bP.about}，兴趣=${bP.interests}，出发地=${bP.area}，出发时间=${bP.time}，交通方式=${bP.transport}
+输出：{"inviteMessage":"","icebreakerTopics":["",""]}（2个话题）`;
+
+  try {
+    const raw = await _callMiMo(sys, user, 0.8);
+    console.log('[MIMO-COMMUTE] raw:', raw?.slice(0, 300));
+    const parsed = JSON.parse(_extractJSON(raw));
+    if (!parsed.inviteMessage) throw new Error('empty inviteMessage');
+    return parsed;
+  } catch (e) {
+    console.warn('[MIMO-COMMUTE] 失败:', e.message);
+    return { inviteMessage: '嘿，要不要一起？', icebreakerTopics: [] };
+  }
+}
+
+
+/** ④ 每日幸运餐 / 星座趣味推荐 */
 async function dailyRecommendation(date, zodiac) {
-  const prompt = `你是Mi搭子的每日推荐助手。今天是${date}，用户是${zodiac}座。
-请输出 JSON：keywords, recommended_food, social_tip`;
+  const sys = `You are a daily inspiration assistant for "Mi搭子" workplace app.
+Generate fun daily recommendations for a Chinese workplace user.
+Output ONLY valid JSON, no explanation, no markdown.
+Output format: {"keywords":"2-3 Chinese social keywords for today","recommended_food":"specific lunch recommendation with brief reason in Chinese ≤20 chars","social_tip":"one practical fun Chinese social tip ≤30 chars","lucky_number":a number 1-99}`;
+
+  const user = `Today: ${date}, User zodiac: ${zodiac}
+Generate daily recommendation:`;
+
   try {
-    return JSON.parse(await _callMiMo(prompt));
+    return JSON.parse(_extractJSON(await _callMiMo(sys, user, 0.9)));
   } catch {
-    return { keywords: '', recommended_food: '', social_tip: '' };
+    return { keywords: '', recommended_food: '', social_tip: '', lucky_number: 0 };
   }
 }
 
-module.exports = { understandProfile, matchCandidates, generateIcebreaker, dailyRecommendation };
+module.exports = { understandProfile, matchCandidates, generateLunchIcebreaker, generateCommuteIcebreaker, dailyRecommendation };

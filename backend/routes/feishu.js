@@ -8,7 +8,7 @@ const { pool } = require('../../database/mock-db');
 const { getJsapiConfig, sendMessage, buildInviteCard } = require('../services/feishu');
 const router = express.Router();
 
-const MOCK_USER = { feishu_id: 'u001', nickname: '小米同学' };
+const MOCK_USER = { feishu_id: 'demo_user', nickname: 'Demo用户' };
 function getUser(req) { return req.session.user || MOCK_USER; }
 
 /** 获取 JSAPI 配置（前端初始化 h5sdk 用） */
