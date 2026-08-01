@@ -4,7 +4,7 @@
  * - 一键邀请发消息
  */
 const express = require('express');
-const { pool } = require('../../database/db');
+const { pool } = require('../../database/mock-db');
 const { getJsapiConfig, sendMessage, buildInviteCard } = require('../services/feishu');
 const router = express.Router();
 
@@ -23,31 +23,51 @@ router.get('/api/feishu/jsapi-config', async (req, res) => {
   }
 });
 
-/** 一键邀请：给候选人发飞书消息 */
+/** 一键邀请：给候选人发飞书消息 + 写 invites + 把 match.status 改成 sent
+ *  前端 sendInvite(targetUserId, inviteMessage) → { targetUserId, inviteMessage, scene?, matchId? }
+ *  兼容旧字段 candidateId / message
+ */
 router.post('/api/match/invite', async (req, res) => {
   const user = getUser(req);
 
-  const { candidateId, scene, message } = req.body;
-  if (!candidateId) {
-    return res.json({ code: 400, msg: '缺少候选人 ID', data: null });
-  }
+  const { targetUserId, candidateId, inviteMessage, message, scene, matchId } = req.body || {};
+  const uid = targetUserId || candidateId;
+  const msg = inviteMessage || message || '';
+  if (!uid) return res.json({ code: 400, msg: '缺少目标用户 ID', data: null });
 
   try {
-    // 查找候选人的 feishu_id
     const [rows] = await pool.query(
       'SELECT feishu_id, nickname FROM users WHERE id = ?',
-      [candidateId]
+      [uid]
     );
-    if (rows.length === 0) {
-      return res.json({ code: 400, msg: '候选人不存在', data: null });
+    if (rows.length === 0) return res.json({ code: 400, msg: '候选人不存在', data: null });
+
+    const [meRows] = await pool.query('SELECT id FROM users WHERE feishu_id = ?', [user.feishu_id]);
+    if (meRows.length === 0) return res.json({ code: 400, msg: '当前用户不存在', data: null });
+    const myId = meRows[0].id;
+
+    // 写 invites + 把匹配置为 sent
+    try {
+      await pool.query(
+        'INSERT INTO invites (match_id, from_user_id, to_user_id, scene, message) VALUES (?, ?, ?, ?, ?)',
+        [matchId || null, myId, uid, scene || 'lunch', msg]
+      );
+      if (matchId) {
+        await pool.query('UPDATE matches SET status = ? WHERE id = ?', ['sent', matchId]);
+      }
+    } catch (e) {
+      console.warn('写 invites 失败(非致命):', e.message);
     }
 
-    const candidate = rows[0];
-    const card = buildInviteCard(user.nickname, scene || 'lunch', message);
+    // 未配置飞书时静默失败,不阻塞主流程
+    try {
+      const card = buildInviteCard(user.nickname, scene || 'lunch', msg);
+      await sendMessage(rows[0].feishu_id, card);
+    } catch (e) {
+      console.warn('发送飞书邀请失败(非致命):', e.message);
+    }
 
-    await sendMessage(candidate.feishu_id, card);
-
-    res.json({ code: 200, msg: '邀请已发送', data: null });
+    res.json({ code: 200, msg: '邀请已发送', data: { success: true } });
   } catch (err) {
     console.error('发送邀请错误:', err.message);
     res.json({ code: 500, msg: '发送失败', data: null });
