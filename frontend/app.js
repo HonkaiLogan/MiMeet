@@ -70,7 +70,7 @@ const AREA_OPTIONS = [
   { value: "上地", label: "上地" }, { value: "望京", label: "望京" }, { value: "五道口", label: "五道口" },
   { value: "通州", label: "通州" }, { value: "亦庄", label: "亦庄" }, { value: "朝阳", label: "朝阳" },
   { value: "海淀", label: "海淀" }, { value: "顺义", label: "顺义" }, { value: "昌平", label: "昌平" },
-  { value: "其他", label: "其他" }
+  { value: "小米公寓", label: "小米公寓" }, { value: "其他", label: "其他" }
 ];
 const TRANSPORT_OPTIONS = [
   { value: "打车", label: "打车", icon: "🚕" }, { value: "顺风车", label: "顺风车", icon: "🚗" },
@@ -1874,11 +1874,22 @@ const DailyPage = {
     this.loadOffers();
   },
   async loadRecommendation() {
+    const TAROT_FALLBACKS = [
+      { text: '塔罗牌显示：今日贵人在食堂等你，主动开口必有惊喜', tag: '🃏 大阿卡纳·愚者' },
+      { text: '塔罗牌显示：今日能量充盈，找到志同道合的饭搭子概率+200%', tag: '🌟 大阿卡纳·星星' },
+      { text: '塔罗牌显示：今日适合突破舒适圈，试试平时不敢搭话的那位同事', tag: '☀️ 大阿卡纳·太阳' },
+    ];
     const rec = await getDailyRecommendation();
-    if (!rec) return;
     const textEl = document.getElementById('daily-text');
-    if (textEl) textEl.textContent = `"${rec.recommendation}"`;
     const tagEl = document.getElementById('daily-tag');
+    const recText = rec && (rec.recommendation || rec.social_tip || rec.recommended_food);
+    if (!recText) {
+      const fb = TAROT_FALLBACKS[Math.floor(Math.random() * TAROT_FALLBACKS.length)];
+      if (textEl) textEl.textContent = `"${fb.text}"`;
+      if (tagEl) tagEl.textContent = fb.tag;
+      return;
+    }
+    if (textEl) textEl.textContent = `"${recText}"`;
     if (tagEl && rec.funTag) tagEl.textContent = rec.funTag;
 
     if (rec.suggestedBuddy) {
@@ -1938,8 +1949,8 @@ const DailyPage = {
       { cuisine: '🍛 主食', dish: '咖喱鸡饭', reason: '今日异域风情加持，适合结识新朋友', social: '社交指数 ★★★★★' },
       { cuisine: '🥘 暖汤', dish: '番茄蛋花汤', reason: '今日温柔加持，暖胃暖心', social: '社交指数 ★★★☆☆' }
     ];
-    const profile = getStorage('userProfile') || {};
-    const constellation = (MOCK_PROFILES['u001'] || {}).constellation || '天秤座';
+    const profileData = getStorage('userProfile') || {};
+    const constellation = profileData.constellation || '天秤座';
     const shuffled = FORTUNES.sort(() => Math.random() - 0.5).slice(0, 3);
     document.querySelectorAll('.fortune-card').forEach((card, i) => {
       card.addEventListener('click', () => {

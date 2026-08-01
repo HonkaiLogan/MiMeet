@@ -80,6 +80,12 @@ Output: [{"candidate_id":"","score":0,"reason":"","commonTags":[]}]`;
   }
 }
 
+// 当日亮点菜品（与 daily.js 保持同步）
+const DAILY_HIGHLIGHTS = [
+  { canteen: '2010餐厅·称重餐线', location: '科技园CD栋', dish: '蒜香烤猪颈肉', badge: '回归', desc: '蒜香猪颈肉回归了！蒜香浓郁外焦里嫩' },
+  { canteen: '称重自助餐线', location: '科技园AB栋', dish: '照烧鸡腿肉', badge: '推荐', desc: '照烧鸡腿肉很好吃，汁多味美' },
+];
+
 /** ③-A 午餐破冰话术生成 */
 async function generateLunchIcebreaker(profileA, profileB) {
   const parseArr = v => {
@@ -97,9 +103,12 @@ async function generateLunchIcebreaker(profileA, profileB) {
   const aP = pick(profileA);
   const bP = pick(profileB);
 
+  const highlightHint = DAILY_HIGHLIGHTS.map(h => `${h.location}${h.canteen}的${h.dish}（${h.desc}）`).join('；');
+
   const sys = `你是职场社交App的话术生成器，帮用户写午餐邀请消息。
-inviteMessage写法：像真人发微信一样自然，找到一个具体的共同点（口味/时间/兴趣/部门）作为邀请理由，语气轻松友好不客套，不超过40字，只聊吃饭，不提居住地或通勤。
-icebreakerTopics写法：生成2个开放式问题，每个问题要基于某一个具体的共同点或对方的某个特点来提问，让对方有话说，像朋友之间自然聊天，不要泛泛问"你喜欢什么"这种，要有具体切入点。`;
+inviteMessage写法：像真人发微信一样自然，找到一个具体的共同点（口味/时间/兴趣/部门）作为邀请理由，语气轻松友好不客套，不超过40字，只聊吃饭，不提居住地或通勤。可以自然地提到今日亮点菜品，让邀请更有话题感。
+icebreakerTopics写法：生成2个开放式问题，每个问题要基于某一个具体的共同点或对方的某个特点来提问，让对方有话说，像朋友之间自然聊天，不要泛泛问"你喜欢什么"这种，要有具体切入点。也可以用今日亮点菜品作为话题切入点。
+今日亮点菜品：${highlightHint}`;
 
   const user = `发起人：部门=${aP.dept}，自我介绍=${aP.about}，兴趣=${aP.interests}，口味=${aP.taste}，用餐时间=${aP.time}
 被邀请人：部门=${bP.dept}，自我介绍=${bP.about}，兴趣=${bP.interests}，口味=${bP.taste}，用餐时间=${bP.time}

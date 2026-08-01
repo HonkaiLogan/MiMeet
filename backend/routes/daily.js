@@ -83,4 +83,29 @@ router.get('/api/daily/recommend', async (req, res) => {
   }
 });
 
+const DAILY_HIGHLIGHTS = [
+  {
+    id: 'h001',
+    canteen: '2010餐厅·称重餐线',
+    location: '科技园CD栋',
+    dish: '蒜香烤猪颈肉',
+    badge: '回归',
+    desc: '蒜香猪颈肉回归了！蒜香浓郁外焦里嫩，手速要快',
+    date: todayStr()
+  },
+  {
+    id: 'h002',
+    canteen: '称重自助餐线',
+    location: '科技园AB栋',
+    dish: '照烧鸡腿肉',
+    badge: '推荐',
+    desc: '照烧鸡腿肉很好吃，汁多味美，强烈推荐',
+    date: todayStr()
+  }
+];
+
+router.get('/api/daily/highlights', (req, res) => {
+  res.json({ code: 200, msg: 'ok', data: DAILY_HIGHLIGHTS });
+});
+
 module.exports = router;

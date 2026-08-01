@@ -65,6 +65,16 @@ const MOCK_USERS = {
   'u056': { userId: 'u056', nickname: '尹同学',   avatar: './assets/avatars/9.jpg',  department: '天星数科', joinDate: '2025-07-01', role: '校招生' },
   'u057': { userId: 'u057', nickname: '姜同学',   avatar: './assets/avatars/29.jpg', department: '集团技术委', joinDate: '2026-04-01', role: '校招生' },
   'u058': { userId: 'u058', nickname: '熊同学',   avatar: './assets/avatars/27.jpg', department: '生态链部', joinDate: '2025-07-01', role: '校招生' },
+  'u059': { userId: 'u059', nickname: '魏同学',   avatar: './assets/avatars/30.jpg', department: '手机部', joinDate: '2025-07-01', role: '校招生' },
+  'u060': { userId: 'u060', nickname: '彭同学',   avatar: './assets/avatars/31.jpg', department: '互联网业务部', joinDate: '2026-01-01', role: '校招生' },
+  'u061': { userId: 'u061', nickname: '董同学',   avatar: './assets/avatars/32.jpg', department: '中国区', joinDate: '2025-04-01', role: '社招' },
+  'u062': { userId: 'u062', nickname: '谭同学',   avatar: './assets/avatars/33.jpg', department: '人力资源部', joinDate: '2025-07-01', role: '校招生' },
+  'u063': { userId: 'u063', nickname: '曾同学',   avatar: './assets/avatars/34.jpg', department: '新业务部', joinDate: '2026-04-01', role: '校招生' },
+  'u064': { userId: 'u064', nickname: '贾同学',   avatar: './assets/avatars/35.jpg', department: '集团技术委', joinDate: '2025-07-01', role: '校招生' },
+  'u065': { userId: 'u065', nickname: '付同学',   avatar: './assets/avatars/36.jpg', department: '天星数科', joinDate: '2025-07-01', role: '校招生' },
+  'u066': { userId: 'u066', nickname: '范同学',   avatar: './assets/avatars/37.jpg', department: '汽车部', joinDate: '2024-07-01', role: '社招' },
+  'u067': { userId: 'u067', nickname: '柳同学',   avatar: './assets/avatars/39.jpg', department: '国际业务部', joinDate: '2025-07-01', role: '校招生' },
+  'u068': { userId: 'u068', nickname: '孔同学',   avatar: './assets/avatars/40.jpg', department: '生态链部', joinDate: '2026-01-01', role: '校招生' },
 };
 
 // ============ 用户画像数据 ============
@@ -364,6 +374,56 @@ const MOCK_PROFILES = {
     lunchPreference: { time: '12:00', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
     commutePreference: { homeArea: '顺义', departureTime: '09:00', transportMode: '地铁+打车' },
     interestTags: ['运营', '旅行', '美食'], mbti: 'ENFP', constellation: '水瓶座'
+  },
+  'u059': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '08:30', transportMode: '骑行' },
+    interestTags: ['AI', '技术', '游戏'], mbti: 'INTJ', constellation: '天蝎座'
+  },
+  'u060': {
+    lunchPreference: { time: '12:30', taste: ['辣', '米饭'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '09:00', transportMode: '骑行' },
+    interestTags: ['产品', 'AI', '音乐'], mbti: 'ENFJ', constellation: '双子座'
+  },
+  'u061': {
+    lunchPreference: { time: '12:00', taste: ['轻食', '清淡'], budget: '30-50', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '08:30', transportMode: '步行' },
+    interestTags: ['设计', '摄影', '旅行'], mbti: 'ISFP', constellation: '射手座'
+  },
+  'u062': {
+    lunchPreference: { time: '13:00', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '09:30', transportMode: '步行' },
+    interestTags: ['技术', '读书', '电影'], mbti: 'INTP', constellation: '摩羯座'
+  },
+  'u063': {
+    lunchPreference: { time: '12:00', taste: ['辣', '米饭'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '08:00', transportMode: '骑行' },
+    interestTags: ['运营', 'AI', '健身'], mbti: 'ESTP', constellation: '白羊座'
+  },
+  'u064': {
+    lunchPreference: { time: '12:30', taste: ['轻食', '沙拉'], budget: '40-60', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '09:00', transportMode: '步行' },
+    interestTags: ['产品', '旅行', '宠物'], mbti: 'INFP', constellation: '天秤座'
+  },
+  'u065': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '08:30', transportMode: '骑行' },
+    interestTags: ['技术', 'AI', '游戏'], mbti: 'ISTP', constellation: '狮子座'
+  },
+  'u066': {
+    lunchPreference: { time: '12:00', taste: ['辣', '面食'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '09:00', transportMode: '步行' },
+    interestTags: ['设计', '音乐', '电影'], mbti: 'ESFP', constellation: '巨蟹座'
+  },
+  'u067': {
+    lunchPreference: { time: '13:00', taste: ['清淡', '米饭'], budget: '30-50', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '09:30', transportMode: '骑行' },
+    interestTags: ['产品', '读书', '旅行'], mbti: 'INFJ', constellation: '处女座'
+  },
+  'u068': {
+    lunchPreference: { time: '12:30', taste: ['轻食', '清淡'], budget: '40-60', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '小米公寓', departureTime: '08:30', transportMode: '步行' },
+    interestTags: ['运营', 'AI', '健身'], mbti: 'ENFP', constellation: '水瓶座'
   }
 };
 
@@ -638,5 +698,27 @@ const MOCK_DAILY_RECOMMENDATIONS = [
   }
 ];
 
+// ============ 每日亮点菜品 ============
+const MOCK_DAILY_HIGHLIGHTS = [
+  {
+    id: 'h001',
+    canteen: '2010餐厅·称重餐线',
+    location: '科技园CD栋',
+    dish: '蒜香烤猪颈肉',
+    badge: '回归',
+    desc: '蒜香猪颈肉回归了！蒜香浓郁外焦里嫩，手速要快',
+    date: '2026-08-01'
+  },
+  {
+    id: 'h002',
+    canteen: '称重自助餐线',
+    location: '科技园AB栋',
+    dish: '照烧鸡腿肉',
+    badge: '推荐',
+    desc: '照烧鸡腿肉很好吃，汁多味美，强烈推荐',
+    date: '2026-08-01'
+  }
+];
+
 // ============ 导出所有Mock数据 ============
-// export { MOCK_USERS, MOCK_PROFILES, MOCK_MENUS, MOCK_OFFERS, MOCK_SQUARE_POSTS, MOCK_MATCH_RECOMMENDATIONS, MOCK_MATCH_HISTORY, MOCK_DAILY_RECOMMENDATIONS };
+// export { MOCK_USERS, MOCK_PROFILES, MOCK_MENUS, MOCK_OFFERS, MOCK_SQUARE_POSTS, MOCK_MATCH_RECOMMENDATIONS, MOCK_MATCH_HISTORY, MOCK_DAILY_RECOMMENDATIONS, MOCK_DAILY_HIGHLIGHTS };
