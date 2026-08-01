@@ -40,7 +40,6 @@ app.use(require('./routes/square'));
 app.use(require('./routes/daily'));
 app.use(require('./routes/utility'));
 app.use(require('./routes/feishu'));
-app.use(require('./routes/feishu-events'));
 
 // 首页
 app.get('/', (req, res) => {
