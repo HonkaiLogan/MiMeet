@@ -3,12 +3,15 @@
  */
 const express = require('express');
 const { pool } = require('../../database/db');
+const { understandProfile } = require('../services/mimo');
 const router = express.Router();
+
+const MOCK_USER = { feishu_id: 'u001', nickname: '小米同学', avatar_url: '' };
+function getUser(req) { return req.session.user || MOCK_USER; }
 
 /** 获取当前用户画像 */
 router.get('/api/user/getProfile', async (req, res) => {
-  const user = req.session.user;
-  if (!user) return res.json({ code: 401, msg: '未登录', data: null });
+  const user = getUser(req);
 
   try {
     const [rows] = await pool.query(`
@@ -26,8 +29,7 @@ router.get('/api/user/getProfile', async (req, res) => {
 
 /** 保存用户画像 */
 router.post('/api/user/saveProfile', async (req, res) => {
-  const user = req.session.user;
-  if (!user) return res.json({ code: 401, msg: '未登录', data: null });
+  const user = getUser(req);
 
   const data = req.body;
   const conn = await pool.getConnection();
@@ -88,6 +90,17 @@ router.post('/api/user/saveProfile', async (req, res) => {
     }
 
     res.json({ code: 200, msg: '保存成功', data: null });
+
+    // Async: run MiMo profile analysis and store parsed tags (non-blocking)
+    const rawPrefs = { ...data, nickname: user.nickname, about_me: user.about_me || '' };
+    understandProfile(rawPrefs).then(parsed => {
+      if (parsed && parsed.personalityTags) {
+        pool.query(
+          'UPDATE users SET mimo_profile = ? WHERE feishu_id = ?',
+          [JSON.stringify(parsed), user.feishu_id]
+        ).catch(() => {});
+      }
+    }).catch(() => {});
   } catch (err) {
     console.error('保存画像错误:', err.message);
     res.json({ code: 500, msg: '服务器异常', data: null });

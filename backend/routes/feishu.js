@@ -8,6 +8,9 @@ const { pool } = require('../../database/db');
 const { getJsapiConfig, sendMessage, buildInviteCard } = require('../services/feishu');
 const router = express.Router();
 
+const MOCK_USER = { feishu_id: 'u001', nickname: '小米同学' };
+function getUser(req) { return req.session.user || MOCK_USER; }
+
 /** 获取 JSAPI 配置（前端初始化 h5sdk 用） */
 router.get('/api/feishu/jsapi-config', async (req, res) => {
   try {
@@ -22,8 +25,7 @@ router.get('/api/feishu/jsapi-config', async (req, res) => {
 
 /** 一键邀请：给候选人发飞书消息 */
 router.post('/api/match/invite', async (req, res) => {
-  const user = req.session.user;
-  if (!user) return res.json({ code: 401, msg: '未登录', data: null });
+  const user = getUser(req);
 
   const { candidateId, scene, message } = req.body;
   if (!candidateId) {

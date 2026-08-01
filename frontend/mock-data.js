@@ -7,70 +7,64 @@
 
 // ============ 用户数据 ============
 const MOCK_USERS = {
-  'u001': {
-    userId: 'u001',
-    nickname: '小米同学',
-    avatar: './assets/avatar-01.jpg',
-    department: '中国区-新零售部',
-    joinDate: '2025-07-01',
-    role: '校招生'
-  },
-  'u002': {
-    userId: 'u002',
-    nickname: '吴同学',
-    avatar: './assets/avatar-02.jpg',
-    department: '人力资源部',
-    joinDate: '2025-07-01',
-    role: '校招生'
-  },
-  'u003': {
-    userId: 'u003',
-    nickname: '李同学',
-    avatar: './assets/avatar-03.jpg',
-    department: '手机部-硬件工程部',
-    joinDate: '2024-07-01',
-    role: '社招'
-  },
-  'u004': {
-    userId: 'u004',
-    nickname: '王同学',
-    avatar: './assets/avatar-04.jpg',
-    department: '手机部-新业务部',
-    joinDate: '2026-04-01',
-    role: '校招生'
-  },
-  'u005': {
-    userId: 'u005',
-    nickname: '黄同学',
-    avatar: './assets/avatar-05.jpg',
-    department: '中国区-电商部',
-    joinDate: '2025-07-01',
-    role: '校招生'
-  },
-  'u006': {
-    userId: 'u006',
-    nickname: '赵同学',
-    avatar: './assets/avatar-06.jpg',
-    department: '技术部',
-    joinDate: '2025-04-01',
-    role: '社招'
-  },
-  'u007': {
-    userId: 'u007',
-    nickname: '周同学',
-    avatar: './assets/avatar-03.jpg',
-    department: '产品部',
-    joinDate: '2025-07-01',
-    role: '校招生'
-  },
-  'u008': {
-    userId: 'u008',
-    nickname: '张同学',
-    avatar: './assets/avatar-02.jpg',
-    department: '设计部',
-    joinDate: '2026-01-01',
-    role: '校招生'
-  }
+  'u001': { userId: 'u001', nickname: '小米同学', avatar: './assets/avatars/28.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生' },
+  'u002': { userId: 'u002', nickname: '吴同学',   avatar: './assets/avatars/4.jpg',  department: '人力资源部', joinDate: '2025-07-01', role: '校招生' },
+  'u003': { userId: 'u003', nickname: '李同学',   avatar: './assets/avatars/5.jpg',  department: '手机部', joinDate: '2024-07-01', role: '社招' },
+  'u004': { userId: 'u004', nickname: '王同学',   avatar: './assets/avatars/21.jpg', department: '新业务部', joinDate: '2026-04-01', role: '校招生' },
+  'u005': { userId: 'u005', nickname: '黄同学',   avatar: './assets/avatars/19.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生' },
+  'u006': { userId: 'u006', nickname: '赵同学',   avatar: './assets/avatars/2.jpg',  department: '集团技术委', joinDate: '2025-04-01', role: '社招' },
+  'u007': { userId: 'u007', nickname: '周同学',   avatar: './assets/avatars/30.jpg', department: '互联网业务部', joinDate: '2025-07-01', role: '校招生' },
+  'u008': { userId: 'u008', nickname: '张同学',   avatar: './assets/avatars/16.jpg', department: '生态链部', joinDate: '2026-01-01', role: '校招生' },
+  'u009': { userId: 'u009', nickname: '陈同学',   avatar: './assets/avatars/33.jpg', department: '汽车部', joinDate: '2025-07-01', role: '校招生' },
+  'u010': { userId: 'u010', nickname: '林同学',   avatar: './assets/avatars/49.jpg', department: '手机部', joinDate: '2025-07-01', role: '校招生' },
+  'u011': { userId: 'u011', nickname: '刘同学',   avatar: './assets/avatars/23.jpg', department: '人力资源部', joinDate: '2025-07-01', role: '校招生' },
+  'u012': { userId: 'u012', nickname: '孙同学',   avatar: './assets/avatars/27.jpg', department: '国际业务部', joinDate: '2026-04-01', role: '校招生' },
+  'u013': { userId: 'u013', nickname: '郑同学',   avatar: './assets/avatars/42.jpg', department: '集团技术委', joinDate: '2025-07-01', role: '校招生' },
+  'u014': { userId: 'u014', nickname: '冯同学',   avatar: './assets/avatars/6.jpg',  department: '中国区', joinDate: '2025-04-01', role: '社招' },
+  'u015': { userId: 'u015', nickname: '蒋同学',   avatar: './assets/avatars/7.jpg',  department: '新业务部', joinDate: '2025-07-01', role: '校招生' },
+  'u016': { userId: 'u016', nickname: '韩同学',   avatar: './assets/avatars/32.jpg', department: '天星数科', joinDate: '2026-01-01', role: '校招生' },
+  'u017': { userId: 'u017', nickname: '杨同学',   avatar: './assets/avatars/1.jpg',  department: '互联网业务部', joinDate: '2025-07-01', role: '校招生' },
+  'u018': { userId: 'u018', nickname: '许同学',   avatar: './assets/avatars/22.jpg', department: '手机部', joinDate: '2024-07-01', role: '社招' },
+  'u019': { userId: 'u019', nickname: '何同学',   avatar: './assets/avatars/25.jpg', department: '生态链部', joinDate: '2025-07-01', role: '校招生' },
+  'u020': { userId: 'u020', nickname: '吕同学',   avatar: './assets/avatars/9.jpg',  department: '手机部', joinDate: '2025-07-01', role: '校招生' },
+  'u021': { userId: 'u021', nickname: '罗同学',   avatar: './assets/avatars/35.jpg', department: '人力资源部', joinDate: '2026-04-01', role: '校招生' },
+  'u022': { userId: 'u022', nickname: '高同学',   avatar: './assets/avatars/39.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生' },
+  'u023': { userId: 'u023', nickname: '谢同学',   avatar: './assets/avatars/17.jpg', department: '国际业务部', joinDate: '2025-04-01', role: '社招' },
+  'u024': { userId: 'u024', nickname: '唐同学',   avatar: './assets/avatars/11.jpg', department: '汽车部', joinDate: '2025-07-01', role: '校招生' },
+  'u025': { userId: 'u025', nickname: '邓同学',   avatar: './assets/avatars/12.jpg', department: '互联网业务部', joinDate: '2026-01-01', role: '校招生' },
+  'u026': { userId: 'u026', nickname: '方同学',   avatar: './assets/avatars/37.jpg', department: '集团技术委', joinDate: '2025-07-01', role: '校招生' },
+  'u027': { userId: 'u027', nickname: '钱同学',   avatar: './assets/avatars/20.jpg', department: '天星数科', joinDate: '2024-07-01', role: '社招' },
+  'u028': { userId: 'u028', nickname: '秦同学',   avatar: './assets/avatars/15.jpg', department: '新业务部', joinDate: '2025-07-01', role: '校招生' },
+  'u029': { userId: 'u029', nickname: '薛同学',   avatar: './assets/avatars/46.jpg', department: '生态链部', joinDate: '2025-07-01', role: '校招生' },
+  'u030': { userId: 'u030', nickname: '沈同学',   avatar: './assets/avatars/36.jpg', department: '手机部', joinDate: '2026-04-01', role: '校招生' },
+  'u031': { userId: 'u031', nickname: '侯同学',   avatar: './assets/avatars/41.jpg', department: '人力资源部', joinDate: '2025-07-01', role: '校招生' },
+  'u032': { userId: 'u032', nickname: '龙同学',   avatar: './assets/avatars/24.jpg', department: '汽车部', joinDate: '2025-04-01', role: '社招' },
+  'u033': { userId: 'u033', nickname: '江同学',   avatar: './assets/avatars/14.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生' },
+  'u034': { userId: 'u034', nickname: '史同学',   avatar: './assets/avatars/43.jpg', department: '国际业务部', joinDate: '2026-01-01', role: '校招生' },
+  'u035': { userId: 'u035', nickname: '潘同学',   avatar: './assets/avatars/3.jpg',  department: '集团技术委', joinDate: '2025-07-01', role: '校招生' },
+  'u036': { userId: 'u036', nickname: '苏同学',   avatar: './assets/avatars/8.jpg',  department: '互联网业务部', joinDate: '2024-07-01', role: '社招' },
+  'u037': { userId: 'u037', nickname: '程同学',   avatar: './assets/avatars/13.jpg', department: '手机部', joinDate: '2025-07-01', role: '校招生' },
+  'u038': { userId: 'u038', nickname: '丁同学',   avatar: './assets/avatars/44.jpg', department: '天星数科', joinDate: '2025-07-01', role: '校招生' },
+  'u039': { userId: 'u039', nickname: '卢同学',   avatar: './assets/avatars/48.jpg', department: '新业务部', joinDate: '2026-04-01', role: '校招生' },
+  'u040': { userId: 'u040', nickname: '袁同学',   avatar: './assets/avatars/45.jpg', department: '生态链部', joinDate: '2025-07-01', role: '校招生' },
+  'u041': { userId: 'u041', nickname: '夏同学',   avatar: './assets/avatars/10.png', department: '人力资源部', joinDate: '2025-04-01', role: '社招' },
+  'u042': { userId: 'u042', nickname: '余同学',   avatar: './assets/avatars/40.jpg', department: '汽车部', joinDate: '2025-07-01', role: '校招生' },
+  'u043': { userId: 'u043', nickname: '叶同学',   avatar: './assets/avatars/18.jpg', department: '中国区', joinDate: '2026-01-01', role: '校招生' },
+  'u044': { userId: 'u044', nickname: '贺同学',   avatar: './assets/avatars/29.jpg', department: '互联网业务部', joinDate: '2025-07-01', role: '校招生' },
+  'u045': { userId: 'u045', nickname: '石同学',   avatar: './assets/avatars/50.jpg', department: '国际业务部', joinDate: '2024-07-01', role: '社招' },
+  'u046': { userId: 'u046', nickname: '邹同学',   avatar: './assets/avatars/34.jpg', department: '集团技术委', joinDate: '2025-07-01', role: '校招生' },
+  'u047': { userId: 'u047', nickname: '覃同学',   avatar: './assets/avatars/31.jpg', department: '手机部', joinDate: '2025-07-01', role: '校招生' },
+  'u048': { userId: 'u048', nickname: '梁同学',   avatar: './assets/avatars/38.jpg', department: '天星数科', joinDate: '2026-04-01', role: '校招生' },
+  'u049': { userId: 'u049', nickname: '萧同学',   avatar: './assets/avatars/26.jpg', department: '生态链部', joinDate: '2025-07-01', role: '校招生' },
+  'u050': { userId: 'u050', nickname: '欧同学',   avatar: './assets/avatars/47.jpg', department: '新业务部', joinDate: '2025-04-01', role: '社招' },
+  'u051': { userId: 'u051', nickname: '白同学',   avatar: './assets/avatars/16.jpg', department: '人力资源部', joinDate: '2025-07-01', role: '校招生' },
+  'u052': { userId: 'u052', nickname: '廖同学',   avatar: './assets/avatars/32.jpg', department: '汽车部', joinDate: '2026-01-01', role: '校招生' },
+  'u053': { userId: 'u053', nickname: '崔同学',   avatar: './assets/avatars/11.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生' },
+  'u054': { userId: 'u054', nickname: '康同学',   avatar: './assets/avatars/24.jpg', department: '互联网业务部', joinDate: '2024-07-01', role: '社招' },
+  'u055': { userId: 'u055', nickname: '毛同学',   avatar: './assets/avatars/21.jpg', department: '国际业务部', joinDate: '2025-07-01', role: '校招生' },
+  'u056': { userId: 'u056', nickname: '尹同学',   avatar: './assets/avatars/9.jpg',  department: '天星数科', joinDate: '2025-07-01', role: '校招生' },
+  'u057': { userId: 'u057', nickname: '姜同学',   avatar: './assets/avatars/29.jpg', department: '集团技术委', joinDate: '2026-04-01', role: '校招生' },
+  'u058': { userId: 'u058', nickname: '熊同学',   avatar: './assets/avatars/27.jpg', department: '生态链部', joinDate: '2025-07-01', role: '校招生' },
 };
 
 // ============ 用户画像数据 ============
@@ -80,68 +74,296 @@ const MOCK_PROFILES = {
       time: '12:00',
       taste: ['清淡', '米饭'],
       budget: '20-40',
-      location: '园区食堂',
+      location: '都可以',
       socialMode: '轻松聊天'
     },
-    commutePreference: {
-      homeArea: '回龙观',
-      departureTime: '08:30',
-      transportMode: '打车'
-    },
-    interestTags: ['AI', '产品', '旅行'],
-    mbti: 'INTJ',
-    constellation: '天秤座'
+    commutePreference: { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' },
+    interestTags: ['AI', '产品', '旅行'], mbti: 'INTJ', constellation: '天秤座'
   },
   'u002': {
-    lunchPreference: {
-      time: '12:30',
-      taste: ['清淡', '轻食'],
-      budget: '30-50',
-      location: '园区食堂',
-      socialMode: '想认识新朋友'
-    },
-    commutePreference: {
-      homeArea: '回龙观',
-      departureTime: '08:20',
-      transportMode: '打车'
-    },
-    interestTags: ['AI', '产品', '电影'],
-    mbti: 'ENFP',
-    constellation: '巨蟹座'
+    lunchPreference: { time: '12:30', taste: ['清淡', '轻食'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' },
+    interestTags: ['AI', '产品', '电影'], mbti: 'ENFP', constellation: '巨蟹座'
   },
   'u003': {
-    lunchPreference: {
-      time: '12:00',
-      taste: ['米饭', '辣'],
-      budget: '20-40',
-      location: '园区食堂',
-      socialMode: '安静吃饭'
-    },
-    commutePreference: {
-      homeArea: '望京',
-      departureTime: '09:00',
-      transportMode: '地铁+打车'
-    },
-    interestTags: ['技术', '游戏', '运动'],
-    mbti: 'ISTJ',
-    constellation: '摩羯座'
+    lunchPreference: { time: '12:00', taste: ['米饭', '辣'], budget: '20-40', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '昌平', departureTime: '08:00', transportMode: '地铁+打车' },
+    interestTags: ['技术', '游戏', '运动'], mbti: 'ISTJ', constellation: '摩羯座'
   },
   'u004': {
-    lunchPreference: {
-      time: '12:30',
-      taste: ['轻食', '沙拉'],
-      budget: '40-60',
-      location: '楼下商圈',
-      socialMode: '想认识新朋友'
-    },
-    commutePreference: {
-      homeArea: '天通苑',
-      departureTime: '08:00',
-      transportMode: '地铁+打车'
-    },
-    interestTags: ['设计', '摄影', '旅行'],
-    mbti: 'INFP',
-    constellation: '双鱼座'
+    lunchPreference: { time: '12:30', taste: ['轻食'], budget: '40-60', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '昌平', departureTime: '08:30', transportMode: '地铁+打车' },
+    interestTags: ['设计', '旅行', '摄影'], mbti: 'INFP', constellation: '双鱼座'
+  },
+  'u005': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '面食'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '昌平', departureTime: '09:00', transportMode: '顺风车' },
+    interestTags: ['运营', 'AI', '音乐'], mbti: 'ESFJ', constellation: '射手座'
+  },
+  'u006': {
+    lunchPreference: { time: '12:00', taste: ['辣', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '天通苑', departureTime: '08:00', transportMode: '地铁+打车' },
+    interestTags: ['技术', 'AI', '游戏'], mbti: 'INTP', constellation: '白羊座'
+  },
+  'u007': {
+    lunchPreference: { time: '12:30', taste: ['米饭', '清淡'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '天通苑', departureTime: '08:30', transportMode: '地铁+打车' },
+    interestTags: ['产品', '运动', '电影'], mbti: 'ENFJ', constellation: '狮子座'
+  },
+  'u008': {
+    lunchPreference: { time: '13:00', taste: ['轻食', '清淡'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '天通苑', departureTime: '09:00', transportMode: '地铁' },
+    interestTags: ['设计', '音乐', '旅行'], mbti: 'ISFP', constellation: '处女座'
+  },
+  'u009': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '天通苑', departureTime: '09:00', transportMode: '打车' },
+    interestTags: ['运营', '电影', '宠物'], mbti: 'ESFP', constellation: '天蝎座'
+  },
+  'u010': {
+    lunchPreference: { time: '12:30', taste: ['面食', '辣'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '顺义', departureTime: '08:00', transportMode: '自驾' },
+    interestTags: ['技术', 'AI', '运动'], mbti: 'ENTJ', constellation: '水瓶座'
+  },
+  'u011': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '轻食'], budget: '20-40', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '顺义', departureTime: '08:30', transportMode: '地铁+打车' },
+    interestTags: ['设计', '宠物', '旅行'], mbti: 'INFJ', constellation: '双子座'
+  },
+  'u012': {
+    lunchPreference: { time: '12:30', taste: ['米饭', '清淡'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '望京', departureTime: '08:30', transportMode: '地铁+打车' },
+    interestTags: ['产品', 'AI', '电影'], mbti: 'ENTP', constellation: '狮子座'
+  },
+  'u013': {
+    lunchPreference: { time: '11:30', taste: ['辣', '面食'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '望京', departureTime: '09:00', transportMode: '地铁' },
+    interestTags: ['技术', '游戏', 'AI'], mbti: 'ISTP', constellation: '摩羯座'
+  },
+  'u014': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '日料'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '望京', departureTime: '09:00', transportMode: '自驾' },
+    interestTags: ['运营', '旅行', '美食'], mbti: 'ISFJ', constellation: '处女座'
+  },
+  'u015': {
+    lunchPreference: { time: '12:30', taste: ['米饭', '辣'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '五道口', departureTime: '09:00', transportMode: '地铁' },
+    interestTags: ['产品', '运动', '音乐'], mbti: 'ENFP', constellation: '白羊座'
+  },
+  'u016': {
+    lunchPreference: { time: '13:00', taste: ['轻食', '西餐'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '五道口', departureTime: '09:00', transportMode: '骑行' },
+    interestTags: ['设计', '音乐', '旅行'], mbti: 'INFP', constellation: '天秤座'
+  },
+  'u017': {
+    lunchPreference: { time: '12:00', taste: ['米饭', '清淡'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '五道口', departureTime: '08:00', transportMode: '地铁+打车' },
+    interestTags: ['产品', 'AI', '电影'], mbti: 'ENTJ', constellation: '巨蟹座'
+  },
+  'u018': {
+    lunchPreference: { time: '12:00', taste: ['辣', '火锅'], budget: '40-60', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '上地', departureTime: '08:30', transportMode: '骑行' },
+    interestTags: ['技术', '游戏', '运动'], mbti: 'INTJ', constellation: '射手座'
+  },
+  'u019': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '轻食'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '上地', departureTime: '09:00', transportMode: '自驾' },
+    interestTags: ['运营', '宠物', '美食'], mbti: 'ESFJ', constellation: '双鱼座'
+  },
+  'u020': {
+    lunchPreference: { time: '12:00', taste: ['面食', '清淡'], budget: '20-40', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '上地', departureTime: '09:00', transportMode: '打车' },
+    interestTags: ['技术', '音乐', '旅行'], mbti: 'ISTJ', constellation: '天蝎座'
+  },
+  'u021': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '西二旗', departureTime: '08:30', transportMode: '打车' },
+    interestTags: ['运营', '电影', 'AI'], mbti: 'ENFJ', constellation: '水瓶座'
+  },
+  'u022': {
+    lunchPreference: { time: '12:00', taste: ['辣', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '西二旗', departureTime: '09:00', transportMode: '地铁+打车' },
+    interestTags: ['运营', 'AI', '游戏'], mbti: 'ESTP', constellation: '狮子座'
+  },
+  'u023': {
+    lunchPreference: { time: '13:00', taste: ['轻食', '日料'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '西二旗', departureTime: '09:00', transportMode: '骑行' },
+    interestTags: ['设计', '旅行', '宠物'], mbti: 'ISFP', constellation: '双子座'
+  },
+  'u024': {
+    lunchPreference: { time: '12:00', taste: ['面食', '辣'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '海淀', departureTime: '09:00', transportMode: '骑行' },
+    interestTags: ['技术', 'AI', '运动'], mbti: 'INTP', constellation: '摩羯座'
+  },
+  'u025': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '海淀', departureTime: '09:00', transportMode: '地铁' },
+    interestTags: ['产品', '旅行', '电影'], mbti: 'ENFP', constellation: '天秤座'
+  },
+  'u026': {
+    lunchPreference: { time: '12:00', taste: ['辣', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '海淀', departureTime: '08:30', transportMode: '打车' },
+    interestTags: ['技术', '游戏', 'AI'], mbti: 'INTJ', constellation: '白羊座'
+  },
+  'u027': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '朝阳', departureTime: '08:30', transportMode: '地铁+打车' },
+    interestTags: ['运营', '美食', '旅行'], mbti: 'ESFJ', constellation: '处女座'
+  },
+  'u028': {
+    lunchPreference: { time: '12:30', taste: ['米饭', '清淡'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '朝阳', departureTime: '09:00', transportMode: '地铁' },
+    interestTags: ['产品', '音乐', '电影'], mbti: 'ENFJ', constellation: '巨蟹座'
+  },
+  'u029': {
+    lunchPreference: { time: '13:00', taste: ['轻食', '西餐'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '朝阳', departureTime: '09:00', transportMode: '打车' },
+    interestTags: ['设计', '旅行', '音乐'], mbti: 'INFP', constellation: '天蝎座'
+  },
+  'u030': {
+    lunchPreference: { time: '12:00', taste: ['辣', '面食'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '通州', departureTime: '07:30', transportMode: '地铁+打车' },
+    interestTags: ['技术', 'AI', '运动'], mbti: 'ISTP', constellation: '射手座'
+  },
+  'u031': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '轻食'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '通州', departureTime: '08:00', transportMode: '地铁+打车' },
+    interestTags: ['运营', 'AI', '宠物'], mbti: 'ENFP', constellation: '水瓶座'
+  },
+  'u032': {
+    lunchPreference: { time: '12:00', taste: ['米饭', '辣'], budget: '20-40', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '通州', departureTime: '08:30', transportMode: '地铁' },
+    interestTags: ['技术', '游戏', '运动'], mbti: 'ISTJ', constellation: '双鱼座'
+  },
+  'u033': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '亦庄', departureTime: '08:00', transportMode: '地铁+打车' },
+    interestTags: ['运营', '美食', '旅行'], mbti: 'ESFP', constellation: '狮子座'
+  },
+  'u034': {
+    lunchPreference: { time: '12:30', taste: ['轻食', '清淡'], budget: '40-60', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '亦庄', departureTime: '08:30', transportMode: '自驾' },
+    interestTags: ['产品', 'AI', '电影'], mbti: 'ENTP', constellation: '天秤座'
+  },
+  'u035': {
+    lunchPreference: { time: '12:00', taste: ['辣', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '亦庄', departureTime: '09:00', transportMode: '打车' },
+    interestTags: ['技术', '游戏', 'AI'], mbti: 'INTJ', constellation: '摩羯座'
+  },
+  'u036': {
+    lunchPreference: { time: '13:00', taste: ['轻食', '日料'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '回龙观', departureTime: '08:00', transportMode: '顺风车' },
+    interestTags: ['设计', '音乐', '宠物'], mbti: 'ISFP', constellation: '双子座'
+  },
+  'u037': {
+    lunchPreference: { time: '12:00', taste: ['面食', '辣'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' },
+    interestTags: ['技术', 'AI', '运动'], mbti: 'INTP', constellation: '白羊座'
+  },
+  'u038': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '回龙观', departureTime: '09:00', transportMode: '顺风车' },
+    interestTags: ['运营', '电影', '旅行'], mbti: 'ENFJ', constellation: '天蝎座'
+  },
+  'u039': {
+    lunchPreference: { time: '12:00', taste: ['米饭', '清淡'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '回龙观', departureTime: '09:00', transportMode: '地铁+打车' },
+    interestTags: ['产品', 'AI', '游戏'], mbti: 'ENTJ', constellation: '射手座'
+  },
+  'u040': {
+    lunchPreference: { time: '12:00', taste: ['辣', '面食'], budget: '20-40', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '昌平', departureTime: '07:30', transportMode: '地铁+打车' },
+    interestTags: ['技术', '运动', '音乐'], mbti: 'ISTP', constellation: '水瓶座'
+  },
+  'u041': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '轻食'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '昌平', departureTime: '08:00', transportMode: '地铁+打车' },
+    interestTags: ['运营', 'AI', '宠物'], mbti: 'ESFJ', constellation: '双鱼座'
+  },
+  'u042': {
+    lunchPreference: { time: '12:00', taste: ['米饭', '辣'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '昌平', departureTime: '08:30', transportMode: '打车' },
+    interestTags: ['技术', '游戏', 'AI'], mbti: 'INTJ', constellation: '狮子座'
+  },
+  'u043': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '面食'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '顺义', departureTime: '08:30', transportMode: '自驾' },
+    interestTags: ['运营', '旅行', '美食'], mbti: 'ENFP', constellation: '天秤座'
+  },
+  'u044': {
+    lunchPreference: { time: '13:00', taste: ['轻食', '西餐'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '顺义', departureTime: '09:00', transportMode: '地铁+打车' },
+    interestTags: ['设计', '音乐', '电影'], mbti: 'ISFP', constellation: '摩羯座'
+  },
+  'u045': {
+    lunchPreference: { time: '12:00', taste: ['米饭', '清淡'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '望京', departureTime: '09:00', transportMode: '地铁+打车' },
+    interestTags: ['产品', 'AI', '旅行'], mbti: 'ENTP', constellation: '双子座'
+  },
+  'u046': {
+    lunchPreference: { time: '12:00', taste: ['辣', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '望京', departureTime: '09:00', transportMode: '打车' },
+    interestTags: ['技术', 'AI', '游戏'], mbti: 'INTP', constellation: '白羊座'
+  },
+  'u047': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '五道口', departureTime: '09:00', transportMode: '骑行' },
+    interestTags: ['技术', '运动', '电影'], mbti: 'ISTJ', constellation: '天蝎座'
+  },
+  'u048': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '轻食'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '上地', departureTime: '09:00', transportMode: '骑行' },
+    interestTags: ['运营', '美食', 'AI'], mbti: 'ESFP', constellation: '射手座'
+  },
+  'u049': {
+    lunchPreference: { time: '13:00', taste: ['轻食', '日料'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '朝阳', departureTime: '08:00', transportMode: '地铁' },
+    interestTags: ['设计', '宠物', '旅行'], mbti: 'INFJ', constellation: '水瓶座'
+  },
+  'u050': {
+    lunchPreference: { time: '12:00', taste: ['辣', '面食'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '通州', departureTime: '08:00', transportMode: '地铁+打车' },
+    interestTags: ['技术', 'AI', '运动'], mbti: 'INTJ', constellation: '双鱼座'
+  },
+  'u051': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '亦庄', departureTime: '08:30', transportMode: '地铁+打车' },
+    interestTags: ['运营', '电影', '宠物'], mbti: 'ENFJ', constellation: '狮子座'
+  },
+  'u052': {
+    lunchPreference: { time: '12:00', taste: ['米饭', '辣'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '西二旗', departureTime: '09:00', transportMode: '打车' },
+    interestTags: ['产品', 'AI', '游戏'], mbti: 'ENTP', constellation: '天秤座'
+  },
+  'u053': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '面食'], budget: '20-40', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '海淀', departureTime: '09:30', transportMode: '骑行' },
+    interestTags: ['技术', '运动', '旅行'], mbti: 'ISTJ', constellation: '摩羯座'
+  },
+  'u054': {
+    lunchPreference: { time: '12:30', taste: ['轻食', '清淡'], budget: '40-60', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '回龙观', departureTime: '08:00', transportMode: '顺风车' },
+    interestTags: ['产品', '旅行', '音乐'], mbti: 'INFP', constellation: '双子座'
+  },
+  'u055': {
+    lunchPreference: { time: '12:00', taste: ['辣', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' },
+    interestTags: ['技术', 'AI', '游戏'], mbti: 'INTP', constellation: '白羊座'
+  },
+  'u056': {
+    lunchPreference: { time: '13:00', taste: ['轻食', '西餐'], budget: '40-60', location: '都可以', socialMode: '安静吃饭' },
+    commutePreference: { homeArea: '通州', departureTime: '08:30', transportMode: '地铁' },
+    interestTags: ['设计', '音乐', '宠物'], mbti: 'ISFP', constellation: '天蝎座'
+  },
+  'u057': {
+    lunchPreference: { time: '12:30', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '想认识新朋友' },
+    commutePreference: { homeArea: '亦庄', departureTime: '09:00', transportMode: '打车' },
+    interestTags: ['运营', 'AI', '电影'], mbti: 'ESFJ', constellation: '射手座'
+  },
+  'u058': {
+    lunchPreference: { time: '12:00', taste: ['清淡', '米饭'], budget: '20-40', location: '都可以', socialMode: '轻松聊天' },
+    commutePreference: { homeArea: '顺义', departureTime: '09:00', transportMode: '地铁+打车' },
+    interestTags: ['运营', '旅行', '美食'], mbti: 'ENFP', constellation: '水瓶座'
   }
 };
 
@@ -378,9 +600,9 @@ const MOCK_MATCH_RECOMMENDATIONS = {
     { uid: 'u004', name: '王同学', dept: '手机部-新业务部 · 入职3个月', score: 78, tags: ['轻食爱好者', '想认识新朋友'], reason: '你们都喜欢轻食，而且都希望认识新朋友，适合一起探索新餐厅。', restaurant: { name: '二楼轻食区·沙拉吧', distance: '步行3分钟', avgPrice: '人均28-40元', rating: 4.4 }, recommendedDishes: [15, 17], budgetRange: '40-60', todayOffer: 1 }
   ],
   commute: [
-    { uid: 'u005', name: '黄同学', score: 95, overlap: '90%', saving: '15元/天', time: '08:20-08:40', reason: '你们都住在回龙观附近，路线重合度较高，适合拼车。', route: { from: '回龙观东大街', to: '小米科技园', waypoints: ['龙泽站', '西二旗'], distance: '12.5km', duration: '35分钟', transportMode: '打车' }, weeklySaving: '75元', monthlySaving: '330元', co2Saved: '2.1kg/周', timeScore: 95, routeScore: 90 },
-    { uid: 'u006', name: '赵同学', score: 88, overlap: '85%', saving: '12元/天', time: '08:00-08:30', reason: '你们出发时间相近，可以固定拼车节省费用。', route: { from: '回龙观西大街', to: '小米科技园', waypoints: ['龙泽站'], distance: '11.2km', duration: '30分钟', transportMode: '顺风车' }, weeklySaving: '60元', monthlySaving: '264元', co2Saved: '1.8kg/周', timeScore: 88, routeScore: 85 },
-    { uid: 'u007', name: '周同学', score: 82, overlap: '80%', saving: '10元/天', time: '08:30-09:00', reason: '你们住在同一片区，可以尝试拼车。', route: { from: '天通苑北', to: '小米科技园', waypoints: ['天通苑站', '西二旗'], distance: '18.3km', duration: '45分钟', transportMode: '地铁+打车' }, weeklySaving: '50元', monthlySaving: '220元', co2Saved: '1.5kg/周', timeScore: 78, routeScore: 80 }
+    { uid: 'u005', name: '黄同学', dept: '中国区-电商部', score: 95, overlap: '90%', saving: '15元/天', time: '08:30', homeArea: '回龙观', transportMode: '顺风车', reason: '你们都住回龙观，出发时间一致，顺路拼车正好。', route: { from: '回龙观东大街', to: '小米科技园', waypoints: ['龙泽站', '西二旗'], distance: '12.5km', duration: '35分钟', transportMode: '顺风车' }, weeklySaving: '75元', monthlySaving: '330元', co2Saved: '2.1kg/周', timeScore: 95, routeScore: 90 },
+    { uid: 'u007', name: '周同学', dept: '产品部', score: 85, overlap: '75%', saving: '10元/天', time: '09:30', homeArea: '西二旗', transportMode: '打车', reason: '西二旗到科技园路线顺，打车10分钟搞定。', route: { from: '西二旗地铁站', to: '小米科技园', waypoints: [], distance: '3.2km', duration: '12分钟', transportMode: '打车' }, weeklySaving: '50元', monthlySaving: '220元', co2Saved: '1.0kg/周', timeScore: 82, routeScore: 85 },
+    { uid: 'u006', name: '赵同学', dept: '技术部', score: 78, overlap: '70%', saving: '8元/天', time: '09:00', homeArea: '上地', transportMode: '自驾', reason: '上地到科技园顺路，可以蹭个顺风车。', route: { from: '上地软件园', to: '小米科技园', waypoints: [], distance: '5.8km', duration: '20分钟', transportMode: '自驾' }, weeklySaving: '40元', monthlySaving: '176元', co2Saved: '1.2kg/周', timeScore: 75, routeScore: 78 }
   ]
 };
 

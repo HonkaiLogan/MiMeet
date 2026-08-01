@@ -102,4 +102,75 @@ router.get('/auth/callback', async (req, res) => {
   }
 });
 
+/** 飞书 JSAPI 登录（客户端内 tt.requestAccess 获取的 code） */
+router.post('/auth/feishu-code', async (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.json({ code: 400, msg: '缺少授权码', data: null });
+
+  try {
+    const tenantToken = await getTenantAccessToken();
+
+    // 用 code 换取 user_access_token（JSAPI 用 app_ticket 流程，但 code 换 token API 相同）
+    const tokenResp = await axios.post(
+      'https://open.feishu.cn/open-apis/authen/v1/oidc/access_token',
+      { grant_type: 'authorization_code', code, app_id: FEISHU_APP_ID, app_secret: FEISHU_APP_SECRET },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    const tokenData = tokenResp.data.data || {};
+    const userAccessToken = tokenData.access_token;
+
+    const userResp = await axios.get(
+      'https://open.feishu.cn/open-apis/authen/v1/user_info',
+      { headers: { Authorization: `Bearer ${userAccessToken}` } }
+    );
+    const userInfo = userResp.data.data || {};
+
+    let department = '', seatNumber = '', aboutMe = '';
+    try {
+      const contactResp = await axios.get(
+        `https://open.feishu.cn/open-apis/contact/v3/users/${userInfo.open_id}?user_id_type=open_id`,
+        { headers: { Authorization: `Bearer ${tenantToken}` } }
+      );
+      const cd = contactResp.data.data?.user || {};
+      department = cd.department_ids?.[0] || '';
+      seatNumber = cd.seat_number || '';
+      aboutMe = cd.about_me || '';
+    } catch (_) {}
+
+    req.session.user = {
+      feishu_id: userInfo.open_id,
+      nickname: userInfo.name,
+      avatar_url: userInfo.avatar_url || '',
+      department,
+      seat_number: seatNumber,
+    };
+
+    const { pool } = require('../../database/db');
+    try {
+      await pool.query(
+        `INSERT INTO users (feishu_id, nickname, avatar_url, department, seat_number, about_me)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE nickname=VALUES(nickname), avatar_url=VALUES(avatar_url),
+           department=VALUES(department), seat_number=VALUES(seat_number), about_me=VALUES(about_me)`,
+        [userInfo.open_id, userInfo.name, userInfo.avatar_url || '', department, seatNumber, aboutMe]
+      );
+    } catch (_) {}
+
+    res.json({ code: 200, msg: 'ok', data: req.session.user });
+  } catch (err) {
+    console.error('JSAPI 登录错误:', err.message);
+    res.json({ code: 500, msg: '登录失败: ' + err.message, data: null });
+  }
+});
+
+/** 获取当前 session 用户（前端用于检测 OAuth 回调后的登录状态） */
+router.get('/api/session/me', (req, res) => {
+  if (req.session && req.session.user) {
+    res.json({ code: 200, msg: 'ok', data: req.session.user });
+  } else {
+    res.json({ code: 401, msg: '未登录', data: null });
+  }
+});
+
 module.exports = router;
