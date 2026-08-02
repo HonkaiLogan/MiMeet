@@ -1,9 +1,11 @@
 /**
  * 匹配引擎
- * 规则初筛（纯代码） + 破冰话术 MiMo 生成
+ * 规则初筛（纯代码） + Python MiMo 精排 + 破冰话术生成
  */
 const { pool } = require('../../database');
 const { generateLunchIcebreaker, generateCommuteIcebreaker } = require('./mimo');
+
+const PYTHON_SVC = process.env.PYTHON_SVC_URL || 'http://localhost:8000';
 
 // 真实园区食堂，按口味标签分组
 const CANTEENS = [
@@ -165,10 +167,40 @@ async function doMatch(userId, scene, seenUserIds = []) {
 
   const myProfile = myRows[0];
 
-  // 直接用规则分数，不走 MiMo 精排
+  // 调 Python MiMo 服务精排，失败则保留规则分数
+  let mimoScores = null;
+  try {
+    const pyRes = await fetch(`${PYTHON_SVC}/match`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_profile: myProfile,
+        candidates: candidates.map(c => ({
+          candidate_id: String(c.user_id),
+          nickname: c.nickname,
+          department: c.department,
+          about_me: c.profile?.about_me || '',
+          interests: c.profile?.interests || [],
+          taste_pref: c.profile?.taste_pref || [],
+          time_pref: c.profile?.time_pref || '',
+          commute_area: c.profile?.commute_area || '',
+          transport: c.profile?.transport || '',
+          social_pref: c.profile?.social_pref || '',
+        })),
+        scene,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const pyJson = await pyRes.json();
+    if (pyJson.code === 200 && Array.isArray(pyJson.data) && pyJson.data.length > 0) {
+      mimoScores = pyJson.data;
+    }
+  } catch (e) {
+    console.warn('[matching] Python MiMo 精排失败，降级规则分数:', e.message);
+  }
+
   const mimoResults = candidates.map(c => {
     const cProfile = c.profile || c;
-    // 根据双方口味偏好推荐餐厅（取两人口味并集）
     const myTastes = parseJSON(myProfile.taste_pref, []);
     const cTastes = parseJSON(cProfile.taste_pref, []);
     const combinedTastes = [...new Set([...myTastes, ...cTastes])];
@@ -178,11 +210,18 @@ async function doMatch(userId, scene, seenUserIds = []) {
       time: cProfile.time_pref || '',
       transport: cProfile.transport || '打车',
     } : null;
+
+    // 用 Python MiMo 精排分数覆盖规则分数（若有）
+    const mimoEntry = mimoScores && mimoScores.find(m => String(m.candidate_id) === String(c.user_id));
+    const finalScore = mimoEntry ? mimoEntry.score : c.rule_score;
+    const finalReason = mimoEntry?.reason || buildReason(myProfile, cProfile, scene);
+    const finalTags = mimoEntry?.commonTags?.length ? mimoEntry.commonTags : buildCommonTags(myProfile, cProfile);
+
     return {
       candidate_id: String(c.user_id),
-      score: c.rule_score,
-      reason: buildReason(myProfile, cProfile, scene),
-      commonTags: buildCommonTags(myProfile, cProfile),
+      score: finalScore,
+      reason: finalReason,
+      commonTags: finalTags,
       rule_score: c.rule_score,
       nickname: c.nickname,
       avatar_url: c.avatar_url,

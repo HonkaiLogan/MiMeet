@@ -1076,21 +1076,18 @@ const MatchLunchPage = {
       const profile = getStorage('userProfile') || {};
       const preference = profile.lunchPreference || { time: '12:00', taste: ['清淡'], budget: '20-40' };
 
-      // 首次加载且有预计算缓存，直接用
-      let result = this.demoBatches[this.batchIndex];
-      /*
+      // 首次加载且有预计算缓存，直接用；否则实时调接口
+      let result;
       const cached = sessionStorage.getItem('preload_lunch');
       if (cached && this.seenUserIds.length === 0) {
         result = JSON.parse(cached);
         sessionStorage.removeItem('preload_lunch');
-        // 后台预计算下一批
         executeMatch('lunch', preference, result.map(r => Number(r.candidate_id || r.userId || 0))).then(next => {
           if (next && next.length > 0) sessionStorage.setItem('preload_lunch_next', JSON.stringify(next));
         }).catch(() => {});
       } else {
         result = await executeMatch('lunch', preference, this.seenUserIds || []);
       }
-      */
 
       document.getElementById('loading')?.classList.add('hidden');
       const c = document.getElementById('results');
@@ -1345,11 +1342,10 @@ const MatchCommutePage = {
       const profile = getStorage('userProfile') || {};
       const preference = profile.commutePreference || { homeArea: '回龙观', departureTime: '08:30', transportMode: '打车' };
       
-      let result = this.demoBatches[this.batchIndex];
-      /*
-      const cached = sessionStorage.getItem('preload_commute');
-      if (cached && this.seenUserIds.length === 0) {
-        result = JSON.parse(cached);
+      let result;
+      const cachedCommute = sessionStorage.getItem('preload_commute');
+      if (cachedCommute && this.seenUserIds.length === 0) {
+        result = JSON.parse(cachedCommute);
         sessionStorage.removeItem('preload_commute');
         executeMatch('commute', preference, result.map(r => Number(r.candidate_id || r.userId || 0))).then(next => {
           if (next && next.length > 0) sessionStorage.setItem('preload_commute_next', JSON.stringify(next));
@@ -1357,7 +1353,6 @@ const MatchCommutePage = {
       } else {
         result = await executeMatch('commute', preference, this.seenUserIds || []);
       }
-      */
 
       document.getElementById('loading')?.classList.add('hidden');
       const c = document.getElementById('results');
@@ -1483,7 +1478,7 @@ const InvitePage = {
 
     // 用已生成的 icebreaker 替换初始静态内容
     // 演示模式使用固定的三组内容，避免接口返回覆盖循环数据。
-    if (false && matchId) {
+    if (matchId) {
       request(`/api/match/icebreaker/${matchId}`, { method: 'GET' }).then(res => {
         if (res && res.inviteMessage) {
           document.getElementById('invite-msg').innerHTML = `<p class="text-sm text-gray-700 leading-relaxed">"${res.inviteMessage}"</p>`;
@@ -1998,33 +1993,29 @@ const DailyPage = {
     const demoTagEl = document.getElementById('daily-tag');
     if (demoTextEl) demoTextEl.textContent = `"${demo.text}"`;
     if (demoTagEl) demoTagEl.textContent = demo.tag;
-    return;
-    const rec = await getDailyRecommendation();
-    const textEl = document.getElementById('daily-text');
-    const tagEl = document.getElementById('daily-tag');
-    const recText = rec && (rec.recommendation || rec.social_tip || rec.recommended_food);
-    if (!recText) {
-      const fb = TAROT_FALLBACKS[Math.floor(Math.random() * TAROT_FALLBACKS.length)];
-      if (textEl) textEl.textContent = `"${fb.text}"`;
-      if (tagEl) tagEl.textContent = fb.tag;
-      return;
-    }
-    if (textEl) textEl.textContent = `"${recText}"`;
-    if (tagEl && rec.funTag) tagEl.textContent = rec.funTag;
+    // 异步从后端拉真实推荐，成功后覆盖
+    getDailyRecommendation().then(rec => {
+      if (!rec) return;
+      const textEl = document.getElementById('daily-text');
+      const tagEl = document.getElementById('daily-tag');
+      const recText = rec.recommendation || rec.social_tip || rec.recommended_food;
+      if (recText && textEl) textEl.textContent = `"${recText}"`;
+      if (rec.funTag && tagEl) tagEl.textContent = rec.funTag;
 
-    if (rec.suggestedBuddy) {
-      const buddy = rec.suggestedBuddy;
-      document.getElementById('daily-buddy').classList.remove('hidden');
-      document.getElementById('buddy-content').innerHTML = `<div class="flex items-center justify-between"><div class="flex items-center space-x-3"><div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center"><span class="text-lg font-medium text-orange-600">${buddy.nickname.charAt(0)}</span></div><div><h4 class="text-sm font-semibold text-gray-900">${buddy.nickname}</h4><p class="text-xs text-gray-500">${buddy.reason}</p></div></div><div class="flex items-center gap-2"><div class="score-ring" style="--score:${buddy.matchScore};width:40px;height:40px"><span class="score-num" style="font-size:11px">${buddy.matchScore}%</span></div><button id="invite-buddy-btn" class="pressable px-3 py-1.5 bg-orange-500 text-white text-xs rounded-full">邀请</button></div></div>`;
-      document.getElementById('invite-buddy-btn')?.addEventListener('click', () => Router.navigateTo('/invite', { userId: buddy.uid || 'u006' }));
-    }
+      if (rec.suggestedBuddy) {
+        const buddy = rec.suggestedBuddy;
+        document.getElementById('daily-buddy').classList.remove('hidden');
+        document.getElementById('buddy-content').innerHTML = `<div class="flex items-center justify-between"><div class="flex items-center space-x-3"><div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center"><span class="text-lg font-medium text-orange-600">${buddy.nickname.charAt(0)}</span></div><div><h4 class="text-sm font-semibold text-gray-900">${buddy.nickname}</h4><p class="text-xs text-gray-500">${buddy.reason}</p></div></div><div class="flex items-center gap-2"><div class="score-ring" style="--score:${buddy.matchScore};width:40px;height:40px"><span class="score-num" style="font-size:11px">${buddy.matchScore}%</span></div><button id="invite-buddy-btn" class="pressable px-3 py-1.5 bg-orange-500 text-white text-xs rounded-full">邀请</button></div></div>`;
+        document.getElementById('invite-buddy-btn')?.addEventListener('click', () => Router.navigateTo('/invite', { userId: buddy.uid || 'u006' }));
+      }
 
-    if (rec.suggestedRestaurant) {
-      const rest = rec.suggestedRestaurant;
-      const dishes = (rec.suggestedDishes || []).map(id => MOCK_MENUS.find(m => m.id === id)).filter(Boolean);
-      document.getElementById('daily-restaurant').classList.remove('hidden');
-      document.getElementById('restaurant-content').innerHTML = `<div class="flex items-center justify-between mb-3"><div><p class="text-sm font-semibold text-gray-900">${rest.name}</p><p class="text-xs text-gray-500">${rest.distance} · 人均${rest.avgPrice}</p></div></div>${dishes.length > 0 ? `<div class="space-y-1.5"><p class="text-xs text-gray-500 mb-1">今日推荐菜品</p>${dishes.map(d => `<div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg"><div class="flex items-center gap-2"><span class="text-sm font-medium">${d.dish}</span><span class="spicy-indicator">${spicyIcons(d.spicy)}</span></div><div class="flex items-center gap-2">${starRating(d.rating)}<span class="text-xs font-medium text-orange-500">${d.price}元</span></div></div>`).join('')}</div>` : ''}`;
-    }
+      if (rec.suggestedRestaurant) {
+        const rest = rec.suggestedRestaurant;
+        const dishes = (rec.suggestedDishes || []).map(id => MOCK_MENUS.find(m => m.id === id)).filter(Boolean);
+        document.getElementById('daily-restaurant').classList.remove('hidden');
+        document.getElementById('restaurant-content').innerHTML = `<div class="flex items-center justify-between mb-3"><div><p class="text-sm font-semibold text-gray-900">${rest.name}</p><p class="text-xs text-gray-500">${rest.distance} · 人均${rest.avgPrice}</p></div></div>${dishes.length > 0 ? `<div class="space-y-1.5"><p class="text-xs text-gray-500 mb-1">今日推荐菜品</p>${dishes.map(d => `<div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg"><div class="flex items-center gap-2"><span class="text-sm font-medium">${d.dish}</span></div><div class="flex items-center gap-2"><span class="text-xs font-medium text-orange-500">${d.price}元</span></div></div>`).join('')}</div>` : ''}`;
+      }
+    }).catch(() => {});
   },
   async loadMenu() {
     const result = await getFoodMenu();
@@ -2286,7 +2277,7 @@ const AIAssistant = {
   messages: [],
   apiConfig: {
     endpoint: 'https://api.siliconflow.cn/v1/chat/completions',
-    apiKey: 'sk-c5twl2zs33dw5v0niw0teggqls6acusmn30rqxfy12xdt184',
+    apiKey: '',
     model: 'XiaoMi/MiMo-7B-RL',
   },
   systemPrompt: `你是Mi搭子的AI助手，专门服务于小米园区员工。你的职责是：
@@ -2423,7 +2414,7 @@ const AIAssistant = {
       <div class="ai-chat-header">
         <div>
           <h3>🤖 Mi搭子助手</h3>
-          <span class="ai-status" id="ai-status">${this.apiConfig.apiKey ? 'MiMo模型在线' : '本地模式 · 点击⚙️接入AI'}</span>
+          <span class="ai-status" id="ai-status">本地模式</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
           <button class="ai-settings-btn" id="ai-settings-btn" title="设置API">
@@ -2435,12 +2426,7 @@ const AIAssistant = {
         </div>
       </div>
       <div class="ai-settings-panel hidden" id="ai-settings-panel">
-        <div class="ai-settings-title">⚙️ 接入AI大模型</div>
-        <div class="ai-settings-field">
-          <label>API Key</label>
-          <input type="password" id="ai-api-key" placeholder="sk-xxx" value="${this.apiConfig.apiKey}">
-          <small>👉 <a href="https://siliconflow.cn" target="_blank">siliconflow.cn</a> 注册获取</small>
-        </div>
+        <div class="ai-settings-title">⚙️ 模型设置</div>
         <div class="ai-settings-field">
           <label>模型选择</label>
           <select id="ai-model-select">
@@ -2493,15 +2479,15 @@ const AIAssistant = {
     const win = document.getElementById('ai-chat-window');
     if (!fab || !win) return;
     const rect = fab.getBoundingClientRect();
-    // 窗口右下角对齐按钮左上角
+    // 窗口右下角对齐按钮左上角，往下偏移让窗口更低
     let winRight = window.innerWidth - rect.left + 10;
-    let winBottom = window.innerHeight - rect.top + 10;
+    let winBottom = window.innerHeight - rect.bottom - 10;
     // 防止超出屏幕
-    const winW = 380, winH = 600;
+    const winW = 460, winH = 780;
     if (winRight + winW > window.innerWidth) winRight = window.innerWidth - winW - 8;
+    if (winBottom < 8) winBottom = 8;
     if (winBottom + winH > window.innerHeight) winBottom = window.innerHeight - winH - 8;
     if (winRight < 8) winRight = 8;
-    if (winBottom < 8) winBottom = 8;
     win.style.right = winRight + 'px';
     win.style.bottom = winBottom + 'px';
   },
@@ -2554,7 +2540,7 @@ const AIAssistant = {
     this.isAPIMode = true;
     const aiReply = await this.callAIAPI(text);
     if (aiReply) { this.isAPIMode = false; this.hideTyping(); this.addBotMessage(aiReply); }
-    else { this.isAPIMode = false; this.processWithLocalRules(text); }
+    else { this.isAPIMode = false; await this.processWithLocalRules(text); }
   },
   extractDishFromContext(text) {
     const lower = text.toLowerCase();
@@ -2566,7 +2552,7 @@ const AIAssistant = {
     }
     return null;
   },
-  processWithLocalRules(text) {
+  async processWithLocalRules(text) {
     this.hideTyping();
     this.currentUserMessage = text;
     const lower = text.toLowerCase().replace(/[？。，！,.]/g, '');
@@ -2582,7 +2568,17 @@ const AIAssistant = {
       return;
     }
     if (this.hasAny(lower, ['人多', '人少', '客流', '排队', '拥挤', '等位', '有没有位置', '现在去'])) { this.handleFlowQuery(); return; }
-    if (this.hasAny(lower, ['优惠', '折扣', '活动', '便宜', '减', '券', '红包', '满减', '打折'])) { this.handleOffers(); return; }
+    if (this.hasAny(lower, ['优惠', '折扣', '活动', '减', '券', '红包', '满减', '打折', '员工福利', '福利'])) {
+      if (this._inOffersChat) {
+        // 已在优惠对话模式，继续追问
+        this.showTyping();
+        await this._sendOffersChat(text);
+        this.hideTyping();
+      } else {
+        this.handleOffers();
+      }
+      return;
+    }
     if (this.hasAny(lower, ['搭子', '找人', '一起', '拼桌', '约饭', '有人吗', '陪同', '陪伴'])) {
       if (this.hasAny(lower, ['拼车', '顺风车', '回龙观', '天通苑', '西二旗'])) this.handleCommuteBuddy();
       else this.handleFindBuddy();
@@ -2672,17 +2668,38 @@ const AIAssistant = {
     const map = { food: () => this.handleFoodRecommend(), offer: () => this.handleOffers(), buddy: () => this.handleFindBuddy(), calorie: () => this.handleCalorieQuery(), flow: () => this.handleFlowQuery(), health: () => this.handleHealthAdvice(), feedback: () => this.handleFeedback(), chat: () => this.handleChat() };
     if (map[action]) map[action]();
   },
-  handleFoodRecommend() {
+  async handleFoodRecommend() {
+    this.addBotMessage('正在为你个性化推荐，稍等一下～ 🍽️');
+    try {
+      const res = await request('/api/agent/recommend', { method: 'POST', body: { type: 'food' } });
+      if (res && res.recommendations && res.recommendations.length) {
+        let msg = '🍽️ 根据你的口味偏好，今日推荐：\n\n';
+        if (res.highlights && res.highlights.length) {
+          msg += '⭐ 今日亮点：\n';
+          res.highlights.forEach(h => { msg += `• ${h.dish}（${h.canteen}）${h.note ? ' — ' + h.note : ''}\n`; });
+          msg += '\n';
+        }
+        msg += '📋 个性化推荐：\n';
+        res.recommendations.forEach(r => { msg += `• ${r.dish} - ¥${r.price}${r.unit || ''}\n  ${r.canteen} · ${r.location}\n  ${r.reason ? '💬 ' + r.reason : ''}\n\n`; });
+        this.addBotMessage(msg.trim(), [
+          { text: '找搭子一起去', action: () => this.handleFindBuddy() },
+          { text: '查客流', action: () => this.handleFlowQuery() },
+        ]);
+      } else {
+        this._handleFoodFallback();
+      }
+    } catch (e) {
+      this._handleFoodFallback();
+    }
+  },
+  _handleFoodFallback() {
     const menus = typeof MOCK_MENUS !== 'undefined' ? MOCK_MENUS : [];
-    const cheapDishes = menus.filter(m => m.price <= 15 && m.spicy === 0).slice(0, 3);
-    const midDishes = menus.filter(m => m.price > 15 && m.price <= 25).slice(0, 2);
+    const dishes = menus.slice(0, 5);
     let msg = '🍽️ 今日推荐菜品：\n\n';
-    if (cheapDishes.length) { msg += '【实惠之选】\n'; cheapDishes.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen}\n`; }); }
-    if (midDishes.length) { msg += '\n【品质之选】\n'; midDishes.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen}\n`; }); }
-    this.addBotMessage(msg + '\n💡 有什么口味偏好吗？我可以给你更精准的推荐！', [
+    dishes.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen}\n`; });
+    this.addBotMessage(msg + '\n💡 有什么口味偏好吗？', [
       { text: '清淡口味', action: () => this.filterByTaste('清淡') },
       { text: '辣味菜品', action: () => this.filterByTaste('辣') },
-      { text: '查看客流', action: () => this.handleFlowQuery() }
     ]);
   },
   filterByTaste(taste) {
@@ -2692,11 +2709,50 @@ const AIAssistant = {
     filtered.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen} · ${d.location}\n`; });
     this.addBotMessage(msg + '\n要不要我帮你找搭子一起去？', [{ text: '找搭子一起去', action: () => this.handleFindBuddy() }, { text: '查卡路里', action: () => this.handleCalorieQuery() }]);
   },
-  handleOffers() {
-    const offers = typeof MOCK_OFFERS !== 'undefined' ? MOCK_OFFERS : [];
-    let msg = '🎫 今日优惠活动：\n\n';
-    offers.forEach(o => { const t = { new: '🆕', weekly: '📅', special: '⭐', group: '👥', time: '⏰' }; msg += `${t[o.type] || '🎫'} ${o.title}\n   ${o.desc} · 有效期至 ${o.expireDate}\n\n`; });
-    this.addBotMessage(msg + '💡 小贴士：周三全场8折最划算！', [{ text: '查看菜单', action: () => this.handleFoodRecommend() }, { text: '找搭子', action: () => this.handleFindBuddy() }]);
+  // 优惠多轮对话历史
+  _offersChatHistory: [],
+  _inOffersChat: false,
+
+  async handleOffers() {
+    this._offersChatHistory = [];
+    this._inOffersChat = true;
+    this.addBotMessage('正在为你查询专属优惠，稍等～ 🎫');
+    await this._sendOffersChat('帮我看看有哪些适合我的员工优惠', true);
+  },
+
+  async _sendOffersChat(userText, isInitial = false) {
+    this._offersChatHistory.push({ role: 'user', content: userText });
+    try {
+      const res = await request('/api/agent/offers-chat', {
+        method: 'POST',
+        body: { messages: this._offersChatHistory, is_initial: isInitial },
+      });
+      if (res && res.reply) {
+        this._offersChatHistory.push({ role: 'assistant', content: res.reply });
+        // 保留最近10轮
+        if (this._offersChatHistory.length > 20) {
+          this._offersChatHistory = this._offersChatHistory.slice(-20);
+        }
+        this.addBotMessage(res.reply, [
+          { text: '餐饮优惠', action: () => this._continueOffersChat('有哪些餐饮美食优惠？') },
+          { text: '娱乐优惠', action: () => this._continueOffersChat('有哪些休闲娱乐优惠？') },
+          { text: '酒店优惠', action: () => this._continueOffersChat('酒店住宿有什么优惠？') },
+        ]);
+      } else {
+        this.addBotMessage('优惠信息加载失败，稍后再试 😅');
+        this._inOffersChat = false;
+      }
+    } catch (e) {
+      this.addBotMessage('优惠信息加载失败，稍后再试 😅');
+      this._inOffersChat = false;
+    }
+  },
+
+  async _continueOffersChat(text) {
+    this.addUserMessage(text);
+    this.showTyping();
+    await this._sendOffersChat(text);
+    this.hideTyping();
   },
   handleFindBuddy() {
     const buddies = this.mockBuddies.slice(0, 3);
@@ -2796,21 +2852,13 @@ const AIAssistant = {
   hideTyping() { const t = document.getElementById('ai-typing'); if (t) t.remove(); },
   scrollToBottom() { const el = document.getElementById('ai-chat-messages'); el.scrollTop = el.scrollHeight; },
   saveAPISettings() {
-    const apiKey = document.getElementById('ai-api-key').value.trim();
     const model = document.getElementById('ai-model-select').value;
-    this.apiConfig.apiKey = apiKey;
     this.apiConfig.model = model;
-    localStorage.setItem('ai_api_key', apiKey);
     localStorage.setItem('ai_model', model);
-    const statusEl = document.getElementById('ai-status');
-    if (apiKey) { statusEl.textContent = 'MiMo模型在线 ✅'; this.addBotMessage('🎉 AI模型已连接！现在我是真正的智能助手了～\n\n试试问我："今天中午吃什么好？"'); }
-    else { statusEl.textContent = '本地模式 · 点击⚙️接入AI'; }
     document.getElementById('ai-settings-panel').classList.add('hidden');
   },
   loadSavedSettings() {
-    const savedKey = localStorage.getItem('ai_api_key');
     const savedModel = localStorage.getItem('ai_model');
-    if (savedKey) this.apiConfig.apiKey = savedKey;
     if (savedModel) this.apiConfig.model = savedModel;
   }
 };

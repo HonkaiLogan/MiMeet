@@ -1,15 +1,8 @@
-/**
- * 每日推荐 API
- *
- * 前端契约:
- *   { recommendation, funTag, suggestedBuddy:{uid,nickname,matchScore,reason},
- *     suggestedRestaurant:{name,distance,avgPrice}, suggestedDishes:[dishId] }
- *
- * 缓存策略: 同一用户同一天只调一次 MiMo,复用 daily_recommend 表
- */
 const express = require('express');
 const { pool } = require('../../database');
 const router = express.Router();
+
+const PYTHON_SVC = process.env.PYTHON_SVC_URL || 'http://localhost:8000';
 
 const FALLBACK_POOL = [
   {
@@ -57,9 +50,35 @@ router.get('/api/daily/recommend', async (req, res) => {
       }
     }
 
-    // TODO: 接入 MiMo 生成个性化推荐;当前从 FALLBACK_POOL 里挑一条
-    const pick = FALLBACK_POOL[Math.floor(Math.random() * FALLBACK_POOL.length)];
-    const data = { ...pick };
+    // 调 Python MiMo 服务生成个性化推荐
+    let data;
+    try {
+      const zodiac = (req.session.user && req.session.user.constellation) || '天秤座';
+      const pyRes = await fetch(`${PYTHON_SVC}/daily/recommend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: todayStr(), zodiac }),
+        signal: AbortSignal.timeout(12000),
+      });
+      const pyJson = await pyRes.json();
+      if (pyJson.code === 200 && pyJson.data && pyJson.data.social_tip) {
+        const d = pyJson.data;
+        data = {
+          recommendation: d.social_tip || d.recommended_food || '',
+          funTag: d.keywords ? `✨ ${d.keywords}` : '🍀 今日幸运',
+          suggestedBuddy: null,
+          suggestedRestaurant: d.recommended_food ? { name: d.recommended_food, distance: '', avgPrice: '' } : null,
+          suggestedDishes: [],
+          lucky_number: d.lucky_number,
+        };
+      }
+    } catch (e) {
+      console.warn('[daily] Python MiMo 调用失败，降级 fallback:', e.message);
+    }
+
+    if (!data) {
+      data = { ...FALLBACK_POOL[Math.floor(Math.random() * FALLBACK_POOL.length)] };
+    }
 
     // 写缓存
     if (user) {

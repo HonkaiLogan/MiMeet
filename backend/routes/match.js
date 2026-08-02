@@ -4,8 +4,9 @@
 const express = require('express');
 const { pool } = require('../../database');
 const { doMatch, buildFallbackIcebreakerPublic } = require('../services/matching');
-const { generateLunchIcebreaker, generateCommuteIcebreaker } = require('../services/mimo');
 const router = express.Router();
+
+const PYTHON_SVC = process.env.PYTHON_SVC_URL || 'http://localhost:8000';
 
 // 没有真实 session 时用 mock 用户兜底
 function getUser(req) {
@@ -88,11 +89,22 @@ router.post('/api/match/icebreaker/:matchId/regenerate', async (req, res) => {
     };
 
     const fallback = buildFallbackIcebreakerPublic(profileA, profileB, {}, m.scene);
-    const iceFn = m.scene === 'commute' ? generateCommuteIcebreaker : generateLunchIcebreaker;
-    const timeout = new Promise(resolve => setTimeout(() => resolve(null), 20000));
-    let ice = await Promise.race([iceFn(profileA, profileB), timeout])
-      .catch(() => null);
-    if (!ice || !ice.inviteMessage || ice.inviteMessage === '嘿，要不要一起？') ice = fallback;
+    let ice = null;
+    try {
+      const pyRes = await fetch(`${PYTHON_SVC}/icebreaker`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_a: profileA, profile_b: profileB, scene: m.scene }),
+        signal: AbortSignal.timeout(20000),
+      });
+      const pyJson = await pyRes.json();
+      if (pyJson.code === 200 && pyJson.data?.inviteMessage) ice = pyJson.data;
+    } catch (e) {
+      console.warn('[match] Python icebreaker 失败，降级 fallback:', e.message);
+    }
+    if (!ice || ice.inviteMessage === '嘿，要不要一起吃饭？' || ice.inviteMessage === '嘿，顺路要不要一起？') {
+      ice = fallback;
+    }
 
     await pool.query('UPDATE matches SET icebreaker = ? WHERE id = ?', [JSON.stringify(ice), matchId]);
     res.json({ code: 200, msg: 'ok', data: ice });
