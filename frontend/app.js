@@ -2281,6 +2281,538 @@ const NotificationPage = {
   }
 };
 
+// ============ AI 智能助手 ============
+const AIAssistant = {
+  isOpen: false,
+  messages: [],
+  apiConfig: {
+    endpoint: 'https://api.siliconflow.cn/v1/chat/completions',
+    apiKey: 'sk-c5twl2zs33dw5v0niw0teggqls6acusmn30rqxfy12xdt184',
+    model: 'XiaoMi/MiMo-7B-RL',
+  },
+  systemPrompt: `你是Mi搭子的AI助手，专门服务于小米园区员工。你的职责是：
+1. 帮用户推荐食堂菜品（基于今日菜单）
+2. 查询食堂实时客流情况
+3. 查找合适的饭搭子或拼车搭子
+4. 查询菜品卡路里和营养信息
+5. 展示优惠活动
+6. 提供健康饮食建议
+回答要求：
+- 简洁友好，像朋友聊天一样
+- 使用emoji让回复更生动
+- 结合园区实际情况给出建议
+- 如果不确定，诚实说明
+当前园区食堂信息：
+- 一楼食堂：2010餐厅·称重餐线（科技园CD栋）
+- 二楼食堂：米宴北京·餐线（科技园AB栋）
+- 三楼食堂：星辰大海·餐线（科技园CD栋）
+- 轻食区：轻食餐线·卤肉饭（科技园E栋）
+- 小吃岛：小吃岛·花车（科技园B栋）`,
+  conversationHistory: [],
+  maxHistoryLength: 20,
+  mockFlowData: [
+    { location: '一楼食堂', count: 35, level: 'low' },
+    { location: '二楼食堂', count: 78, level: 'medium' },
+    { location: '三楼食堂', count: 120, level: 'high' }
+  ],
+  calorieDB: {
+    '红烧肉': { cal: 350, protein: 18, fat: 28, carb: 5 },
+    '鸡胸肉': { cal: 165, protein: 31, fat: 3.6, carb: 0 },
+    '鸡胸肉沙拉': { cal: 250, protein: 28, fat: 12, carb: 8 },
+    '清蒸鱼': { cal: 120, protein: 20, fat: 4, carb: 0 },
+    '米饭': { cal: 130, protein: 2.7, fat: 0.3, carb: 28 },
+    '面条': { cal: 220, protein: 8, fat: 1.5, carb: 43 },
+    '蔬菜沙拉': { cal: 80, protein: 3, fat: 5, carb: 6 },
+    '酱牛肉': { cal: 190, protein: 28, fat: 8, carb: 0 },
+    '盐田虾': { cal: 95, protein: 18, fat: 2, carb: 0 },
+    '卤梅花肉': { cal: 280, protein: 20, fat: 22, carb: 2 },
+    '锅包鱼': { cal: 180, protein: 22, fat: 10, carb: 0 },
+    '卤水鸡腿': { cal: 220, protein: 25, fat: 12, carb: 1 },
+    '地三鲜': { cal: 150, protein: 4, fat: 10, carb: 12 },
+    '清炒时蔬': { cal: 60, protein: 2, fat: 4, carb: 4 },
+    '辣子椒麻鸡': { cal: 200, protein: 24, fat: 10, carb: 2 },
+    '大块肘子': { cal: 320, protein: 22, fat: 25, carb: 3 },
+    '干煸贴骨牛肉': { cal: 260, protein: 30, fat: 15, carb: 2 },
+    '什锦西兰花': { cal: 90, protein: 5, fat: 5, carb: 8 },
+    '风味凉皮': { cal: 180, protein: 5, fat: 8, carb: 25 },
+    '浓香卤肉饭': { cal: 450, protein: 18, fat: 20, carb: 55 },
+    '豉油鸡饭': { cal: 420, protein: 22, fat: 15, carb: 50 },
+    '泰式咖喱牛腩煲': { cal: 380, protein: 25, fat: 22, carb: 20 },
+    '番茄鱼片': { cal: 160, protein: 20, fat: 6, carb: 8 },
+  },
+  mockBuddies: [
+    { name: '吴同学', dept: '人力资源部', matchRate: 92, reason: '都喜欢清淡口味' },
+    { name: '李同学', dept: '手机部', matchRate: 85, reason: '都对AI感兴趣' },
+    { name: '王同学', dept: '新业务部', matchRate: 78, reason: '都在科技园CD栋' },
+    { name: '赵同学', dept: '集团技术委', matchRate: 75, reason: '都喜欢运动' },
+    { name: '周同学', dept: '互联网业务部', matchRate: 72, reason: '都是校招生' },
+  ],
+  init() {
+    this.loadSavedSettings();
+    this.createFloatingButton();
+    this.createChatWindow();
+    this.checkVisibility();
+    // 监听登录/偏好变化
+    window.addEventListener('storage', () => this.checkVisibility());
+    // 定时检查（登录/偏好可能在同一标签页变化）
+    this._visInterval = setInterval(() => this.checkVisibility(), 2000);
+  },
+  checkVisibility() {
+    const u = getStorage('userInfo');
+    const p = getStorage('userProfile');
+    const ready = u && p && (p.lunchPreference || p.commutePreference);
+    const fab = document.getElementById('ai-fab');
+    const win = document.getElementById('ai-chat-window');
+    if (fab) fab.style.display = ready ? '' : 'none';
+    if (win && !ready) { win.classList.remove('show'); this.isOpen = false; }
+  },
+  createFloatingButton() {
+    const fab = document.createElement('button');
+    fab.className = 'ai-fab';
+    fab.id = 'ai-fab';
+    fab.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M10 21v1a2 2 0 0 0 4 0v-1"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>`;
+    document.body.appendChild(fab);
+
+    // 拖动逻辑
+    let dragging = false, moved = false;
+    let startX, startY, origRight, origBottom;
+
+    const onStart = (e) => {
+      const pos = e.touches ? e.touches[0] : e;
+      startX = pos.clientX;
+      startY = pos.clientY;
+      origRight = parseInt(getComputedStyle(fab).right);
+      origBottom = parseInt(getComputedStyle(fab).bottom);
+      dragging = true;
+      moved = false;
+      fab.style.animation = 'none';
+      fab.style.transition = 'none';
+    };
+    const onMove = (e) => {
+      if (!dragging) return;
+      const pos = e.touches ? e.touches[0] : e;
+      const dx = startX - pos.clientX;
+      const dy = pos.clientY - startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      const newRight = Math.max(0, Math.min(window.innerWidth - 60, origRight + dx));
+      const newBottom = Math.max(0, Math.min(window.innerHeight - 60, origBottom + dy));
+      fab.style.right = newRight + 'px';
+      fab.style.bottom = newBottom + 'px';
+      if (this.isOpen) this.syncWindowPosition();
+      e.preventDefault();
+    };
+    const onEnd = () => {
+      dragging = false;
+      fab.style.transition = '';
+      if (!moved) this.toggle();
+    };
+    fab.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    fab.addEventListener('touchstart', onStart, { passive: true });
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  },
+  createChatWindow() {
+    const win = document.createElement('div');
+    win.className = 'ai-chat-window';
+    win.id = 'ai-chat-window';
+    win.innerHTML = `
+      <div class="ai-chat-header">
+        <div>
+          <h3>🤖 Mi搭子助手</h3>
+          <span class="ai-status" id="ai-status">${this.apiConfig.apiKey ? 'MiMo模型在线' : '本地模式 · 点击⚙️接入AI'}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="ai-settings-btn" id="ai-settings-btn" title="设置API">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button class="ai-chat-close" id="ai-chat-close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="ai-settings-panel hidden" id="ai-settings-panel">
+        <div class="ai-settings-title">⚙️ 接入AI大模型</div>
+        <div class="ai-settings-field">
+          <label>API Key</label>
+          <input type="password" id="ai-api-key" placeholder="sk-xxx" value="${this.apiConfig.apiKey}">
+          <small>👉 <a href="https://siliconflow.cn" target="_blank">siliconflow.cn</a> 注册获取</small>
+        </div>
+        <div class="ai-settings-field">
+          <label>模型选择</label>
+          <select id="ai-model-select">
+            <option value="XiaoMi/MiMo-7B-RL" ${this.apiConfig.model === 'XiaoMi/MiMo-7B-RL' ? 'selected' : ''}>MiMo-7B（小米推荐）</option>
+            <option value="Qwen/Qwen2.5-7B-Instruct" ${this.apiConfig.model === 'Qwen/Qwen2.5-7B-Instruct' ? 'selected' : ''}>通义千问-7B</option>
+            <option value="deepseek-ai/DeepSeek-V2-Chat" ${this.apiConfig.model === 'deepseek-ai/DeepSeek-V2-Chat' ? 'selected' : ''}>DeepSeek-V2</option>
+            <option value="THUDM/glm-4-9b-chat" ${this.apiConfig.model === 'THUDM/glm-4-9b-chat' ? 'selected' : ''}>GLM-4-9B</option>
+          </select>
+        </div>
+        <div class="ai-settings-actions">
+          <button id="ai-settings-save" class="ai-settings-save">保存并连接</button>
+          <button id="ai-settings-cancel" class="ai-settings-cancel">取消</button>
+        </div>
+      </div>
+      <div class="ai-quick-actions" id="ai-quick-actions">
+        <button class="ai-quick-btn" data-action="food"><span class="icon">🍜</span><span>找吃的</span></button>
+        <button class="ai-quick-btn" data-action="offer"><span class="icon">🎫</span><span>找优惠</span></button>
+        <button class="ai-quick-btn" data-action="buddy"><span class="icon">👥</span><span>找搭子</span></button>
+        <button class="ai-quick-btn" data-action="calorie"><span class="icon">📊</span><span>查卡路里</span></button>
+        <button class="ai-quick-btn" data-action="flow"><span class="icon">📍</span><span>查客流</span></button>
+        <button class="ai-quick-btn" data-action="health"><span class="icon">💪</span><span>健康建议</span></button>
+        <button class="ai-quick-btn" data-action="feedback"><span class="icon">💬</span><span>提反馈</span></button>
+        <button class="ai-quick-btn" data-action="chat"><span class="icon">🤖</span><span>闲聊</span></button>
+      </div>
+      <div class="ai-chat-messages" id="ai-chat-messages"></div>
+      <div class="ai-chat-input">
+        <input type="text" id="ai-input" placeholder="输入消息..." autocomplete="off">
+        <button id="ai-send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </div>`;
+    document.body.appendChild(win);
+    document.getElementById('ai-chat-close').addEventListener('click', () => this.toggle());
+    document.getElementById('ai-send').addEventListener('click', () => this.sendMessage());
+    document.getElementById('ai-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') this.sendMessage(); });
+    document.getElementById('ai-settings-btn').addEventListener('click', () => document.getElementById('ai-settings-panel').classList.toggle('hidden'));
+    document.getElementById('ai-settings-save').addEventListener('click', () => this.saveAPISettings());
+    document.getElementById('ai-settings-cancel').addEventListener('click', () => document.getElementById('ai-settings-panel').classList.add('hidden'));
+    document.querySelectorAll('.ai-quick-btn').forEach(btn => btn.addEventListener('click', () => this.handleQuickAction(btn.dataset.action)));
+    this.addBotMessage('你好！我是Mi搭子助手 🤖\n\n直接告诉我你想干嘛就行，比如：\n\n💬 "中午吃什么好"\n💬 "现在食堂人多吗"\n💬 "红烧肉多少卡"\n💬 "有什么优惠活动"\n💬 "找个人一起吃饭"\n\n随便问，我能听懂！');
+  },
+  toggle() {
+    this.isOpen = !this.isOpen;
+    const win = document.getElementById('ai-chat-window');
+    const fab = document.getElementById('ai-fab');
+    win.classList.toggle('show', this.isOpen);
+    fab.classList.toggle('open', this.isOpen);
+    if (this.isOpen) this.syncWindowPosition();
+  },
+  syncWindowPosition() {
+    const fab = document.getElementById('ai-fab');
+    const win = document.getElementById('ai-chat-window');
+    if (!fab || !win) return;
+    const rect = fab.getBoundingClientRect();
+    // 窗口右下角对齐按钮左上角
+    let winRight = window.innerWidth - rect.left + 10;
+    let winBottom = window.innerHeight - rect.top + 10;
+    // 防止超出屏幕
+    const winW = 380, winH = 600;
+    if (winRight + winW > window.innerWidth) winRight = window.innerWidth - winW - 8;
+    if (winBottom + winH > window.innerHeight) winBottom = window.innerHeight - winH - 8;
+    if (winRight < 8) winRight = 8;
+    if (winBottom < 8) winBottom = 8;
+    win.style.right = winRight + 'px';
+    win.style.bottom = winBottom + 'px';
+  },
+  async sendMessage() {
+    const input = document.getElementById('ai-input');
+    const text = input.value.trim();
+    if (!text) return;
+    this.addUserMessage(text);
+    input.value = '';
+    input.disabled = true;
+    await this.processUserInput(text);
+    input.disabled = false;
+    input.focus();
+  },
+  async callAIAPI(userMessage) {
+    if (!this.apiConfig.apiKey) return null;
+    try {
+      this.conversationHistory.push({ role: 'user', content: userMessage });
+      if (this.conversationHistory.length > this.maxHistoryLength) this.conversationHistory = this.conversationHistory.slice(-this.maxHistoryLength);
+      const messages = [{ role: 'system', content: this.systemPrompt }, ...this.conversationHistory];
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const response = await fetch(this.apiConfig.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiConfig.apiKey}` },
+        body: JSON.stringify({ model: this.apiConfig.model, messages, temperature: 0.7, max_tokens: 500, stream: false }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+      const data = await response.json();
+      let aiReply = '';
+      if (data.choices && data.choices[0] && data.choices[0].message) aiReply = data.choices[0].message.content || '';
+      else if (data.content && data.content[0]) aiReply = data.content[0].text || '';
+      else throw new Error('API响应格式异常');
+      this.conversationHistory.push({ role: 'assistant', content: aiReply });
+      return aiReply;
+    } catch (error) {
+      console.error('AI API调用失败:', error);
+      if (this.conversationHistory.length > 0 && this.conversationHistory[this.conversationHistory.length - 1].role === 'user') this.conversationHistory.pop();
+      return null;
+    }
+  },
+  saveLocalContext(userMessage, botReply) {
+    this.conversationHistory.push({ role: 'user', content: userMessage }, { role: 'assistant', content: botReply });
+    if (this.conversationHistory.length > this.maxHistoryLength) this.conversationHistory = this.conversationHistory.slice(-this.maxHistoryLength);
+  },
+  async processUserInput(text) {
+    this.showTyping();
+    this.isAPIMode = true;
+    const aiReply = await this.callAIAPI(text);
+    if (aiReply) { this.isAPIMode = false; this.hideTyping(); this.addBotMessage(aiReply); }
+    else { this.isAPIMode = false; this.processWithLocalRules(text); }
+  },
+  extractDishFromContext(text) {
+    const lower = text.toLowerCase();
+    const hasReference = ['那个', '这个', '它', '前面说的', '刚才'].some(w => lower.includes(w));
+    if (hasReference && this.conversationHistory.length > 0) {
+      const allText = this.conversationHistory.slice(-4).map(m => m.content).join(' ');
+      for (const dish of Object.keys(this.calorieDB)) { if (allText.includes(dish)) return dish; }
+      if (typeof MOCK_MENUS !== 'undefined') { for (const item of MOCK_MENUS) { if (allText.includes(item.dish)) return item.dish; } }
+    }
+    return null;
+  },
+  processWithLocalRules(text) {
+    this.hideTyping();
+    this.currentUserMessage = text;
+    const lower = text.toLowerCase().replace(/[？。，！,.]/g, '');
+    const calorieMatch = this.matchCalorieQuery(lower) || this.extractDishFromContext(lower);
+    if (calorieMatch && lower.match(/卡|热量|千卡|大卡/)) { this.queryCalorie(calorieMatch); return; }
+    if (this.hasAny(lower, ['吃什么', '午饭', '午餐', '晚餐', '早饭', '早餐', '菜单', '今天吃', '推荐', '有啥吃的', '有啥好的', '吃啥', '不知道吃', '选择困难', '纠结'])) {
+      if (this.hasAny(lower, ['清淡', '轻食', '素'])) this.filterByTaste('清淡');
+      else if (this.hasAny(lower, ['辣', '川', '湘', '麻辣'])) this.filterByTaste('辣');
+      else if (this.hasAny(lower, ['肉', '硬菜', '大餐'])) this.recommendMeat();
+      else if (this.hasAny(lower, ['便宜', '实惠', '省钱'])) this.recommendCheap();
+      else if (this.hasAny(lower, ['快', '赶时间', '急'])) this.recommendQuick();
+      else this.handleFoodRecommend();
+      return;
+    }
+    if (this.hasAny(lower, ['人多', '人少', '客流', '排队', '拥挤', '等位', '有没有位置', '现在去'])) { this.handleFlowQuery(); return; }
+    if (this.hasAny(lower, ['优惠', '折扣', '活动', '便宜', '减', '券', '红包', '满减', '打折'])) { this.handleOffers(); return; }
+    if (this.hasAny(lower, ['搭子', '找人', '一起', '拼桌', '约饭', '有人吗', '陪同', '陪伴'])) {
+      if (this.hasAny(lower, ['拼车', '顺风车', '回龙观', '天通苑', '西二旗'])) this.handleCommuteBuddy();
+      else this.handleFindBuddy();
+      return;
+    }
+    if (this.hasAny(lower, ['健康', '步数', '运动', '走了', '消耗', '蛋白质', '营养', '减脂', '增肌', '健身'])) { this.handleHealthAdvice(); return; }
+    if (this.hasAny(lower, ['反馈', '建议', '投诉', '吐槽', '问题', '意见', '改进'])) { this.handleFeedback(); return; }
+    if (this.hasAny(lower, ['你好', 'hi', 'hello', '嗨', '在吗', '在不在', '早上好', '晚上好', '中午好'])) {
+      this.addBotMessage(['你好呀！😊 我是Mi搭子助手，有什么可以帮你的？', '嗨！👋 今天想吃点什么？还是找搭子？', '在在在！🤖 随时为你服务～'][Math.floor(Math.random() * 3)]);
+      return;
+    }
+    if (this.hasAny(lower, ['谢谢', '感谢', '多谢', '谢了', '辛苦'])) {
+      this.addBotMessage(['不客气！有需要随时找我～ 😊', '能帮到你就好！还需要什么吗？', '随时效劳！🙌'][Math.floor(Math.random() * 3)]);
+      return;
+    }
+    if (this.hasAny(lower, ['再见', '拜拜', 'bye', '走了', '先这样'])) { this.addBotMessage('好的，有需要再来找我！祝用餐愉快～ 🍽️'); return; }
+    const priceMatch = this.matchPriceQuery(lower);
+    if (priceMatch) { this.queryPrice(priceMatch); return; }
+    if (this.hasAny(lower, ['几点', '时间', '开饭', '开门', '营业', '关'])) { this.addBotMessage('🕐 食堂营业时间：\n\n早餐：07:30 - 09:00\n午餐：11:00 - 13:30\n晚餐：17:00 - 19:30\n\n轻食区/小吃岛营业时间更长哦～'); return; }
+    if (this.hasAny(lower, ['在哪', '位置', '地址', '怎么走', '哪里'])) { this.addBotMessage('📍 园区食堂位置：\n\n• 一楼食堂：CD栋1层\n• 二楼食堂：AB栋2层\n• 三楼食堂：CD栋3层\n• 轻食区：E栋2层\n• 小吃岛：B栋1层\n\n需要我帮你导航吗？'); return; }
+    if (this.hasAny(lower, ['食堂', '饭', '菜', '餐'])) { this.handleFoodRecommend(); return; }
+    if (this.hasAny(lower, ['冷', '热', '空调', '环境', '卫生'])) { this.addBotMessage('📝 已记录你的反馈：关于环境问题\n\n我会帮你转达给后勤部门，感谢你的反馈！还有什么需要补充的吗？'); return; }
+    this.addBotMessage(['收到！我来帮你分析一下～\n\n你可以直接告诉我：\n• "中午吃什么好"\n• "现在食堂人多吗"\n• "有什么优惠"\n• "红烧肉多少卡"', '我还在学习中，不过这些我能帮到你：\n\n🍜 说"吃什么" - 推荐菜品\n📍 说"人多吗" - 查客流\n🎫 说"优惠" - 查折扣\n👥 说"找搭子" - 匹配搭子'][Math.floor(Math.random() * 2)]);
+  },
+  hasAny(text, keywords) { return keywords.some(k => text.includes(k)); },
+  matchCalorieQuery(text) {
+    const calorieKeywords = ['卡', '卡路里', '热量', '千卡', '大卡', '多少卡', '多少热量', '多少千卡'];
+    if (calorieKeywords.some(k => text.includes(k))) {
+      for (const dish of Object.keys(this.calorieDB)) { if (text.includes(dish)) return dish; }
+      const match = text.match(/(.+?)(?:多少|几)(?:卡|热量|千卡)/);
+      if (match) return match[1];
+    }
+    const foodPattern = text.match(/^(.+?)(?:是|的)(?:什么|啥)(?:营养|成分)/);
+    if (foodPattern) return foodPattern[1];
+    return null;
+  },
+  matchPriceQuery(text) {
+    const priceKeywords = ['多少钱', '价格', '价位', '贵不贵', '便宜吗', '收费'];
+    if (priceKeywords.some(k => text.includes(k))) {
+      const menus = typeof MOCK_MENUS !== 'undefined' ? MOCK_MENUS : [];
+      for (const item of menus) { if (text.includes(item.dish)) return item; }
+      const contextDish = this.extractDishFromContext(text);
+      if (contextDish) { for (const item of menus) { if (item.dish === contextDish) return item; } }
+    }
+    return null;
+  },
+  queryPrice(item) {
+    let msg = `💰 ${item.dish}\n\n价格：¥${item.price}${item.unit}\n位置：${item.canteen} · ${item.location}\n口味：${item.spicy === 0 ? '不辣' : item.spicy <= 2 ? '微辣' : '辣'}\n\n`;
+    msg += item.price <= 10 ? '💡 这个很实惠哦！推荐尝试～' : item.price <= 20 ? '💡 价格适中，性价比不错！' : '💡 品质之选，偶尔犒劳一下自己！';
+    this.addBotMessage(msg);
+  },
+  recommendMeat() {
+    const menus = typeof MOCK_MENUS !== 'undefined' ? MOCK_MENUS : [];
+    const meatDishes = menus.filter(m => m.dish.includes('肉') || m.dish.includes('鸡') || m.dish.includes('鱼') || m.dish.includes('牛') || m.dish.includes('虾') || m.dish.includes('肘')).slice(0, 5);
+    let msg = '🍖 硬菜推荐：\n\n';
+    meatDishes.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen}\n`; });
+    this.addBotMessage(msg + '\n今天要好好犒劳自己！', [{ text: '查看客流', action: () => this.handleFlowQuery() }, { text: '找搭子一起', action: () => this.handleFindBuddy() }]);
+  },
+  recommendCheap() {
+    const menus = typeof MOCK_MENUS !== 'undefined' ? MOCK_MENUS : [];
+    const cheapDishes = menus.filter(m => m.price <= 10).slice(0, 6);
+    let msg = '💰 实惠之选（10元以内）：\n\n';
+    cheapDishes.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen}\n`; });
+    this.addBotMessage(msg + '\n省钱也能吃得好！', [{ text: '查看全部菜单', action: () => this.handleFoodRecommend() }]);
+  },
+  recommendQuick() {
+    const menus = typeof MOCK_MENUS !== 'undefined' ? MOCK_MENUS : [];
+    const quickDishes = menus.filter(m => m.dish.includes('饭') || m.dish.includes('面') || m.dish.includes('粉') || m.tag === '按份').slice(0, 5);
+    let msg = '⚡ 快速出餐推荐：\n\n';
+    quickDishes.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen}\n`; });
+    this.addBotMessage(msg + '\n赶时间的话选这些最快！', [{ text: '查看客流', action: () => this.handleFlowQuery() }]);
+  },
+  handleCommuteBuddy() {
+    const buddies = [
+      { name: '王同学', route: '回龙观 → 科技园', time: '8:30', transport: '顺风车' },
+      { name: '李同学', route: '天通苑 → 科技园', time: '8:00', transport: '地铁' },
+      { name: '张同学', route: '西二旗 → 科技园', time: '9:00', transport: '打车' },
+    ];
+    let msg = '🚗 找拼车搭子：\n\n';
+    buddies.forEach((b, i) => { msg += `${i + 1}. ${b.name}\n   ${b.route} · ${b.time} · ${b.transport}\n\n`; });
+    this.addBotMessage(msg + '要帮你联系他们吗？', [
+      { text: '联系王同学', action: () => this.addBotMessage('已向王同学发送拼车邀请！等待回复中... ⏳') },
+      { text: '发布拼车需求', action: () => this.addBotMessage('好的！请告诉我：\n1. 出发地点\n2. 出发时间\n3. 交通方式偏好') }
+    ]);
+  },
+  handleQuickAction(action) {
+    const map = { food: () => this.handleFoodRecommend(), offer: () => this.handleOffers(), buddy: () => this.handleFindBuddy(), calorie: () => this.handleCalorieQuery(), flow: () => this.handleFlowQuery(), health: () => this.handleHealthAdvice(), feedback: () => this.handleFeedback(), chat: () => this.handleChat() };
+    if (map[action]) map[action]();
+  },
+  handleFoodRecommend() {
+    const menus = typeof MOCK_MENUS !== 'undefined' ? MOCK_MENUS : [];
+    const cheapDishes = menus.filter(m => m.price <= 15 && m.spicy === 0).slice(0, 3);
+    const midDishes = menus.filter(m => m.price > 15 && m.price <= 25).slice(0, 2);
+    let msg = '🍽️ 今日推荐菜品：\n\n';
+    if (cheapDishes.length) { msg += '【实惠之选】\n'; cheapDishes.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen}\n`; }); }
+    if (midDishes.length) { msg += '\n【品质之选】\n'; midDishes.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen}\n`; }); }
+    this.addBotMessage(msg + '\n💡 有什么口味偏好吗？我可以给你更精准的推荐！', [
+      { text: '清淡口味', action: () => this.filterByTaste('清淡') },
+      { text: '辣味菜品', action: () => this.filterByTaste('辣') },
+      { text: '查看客流', action: () => this.handleFlowQuery() }
+    ]);
+  },
+  filterByTaste(taste) {
+    const menus = typeof MOCK_MENUS !== 'undefined' ? MOCK_MENUS : [];
+    const filtered = taste === '辣' ? menus.filter(m => m.spicy >= 2).slice(0, 5) : menus.filter(m => m.spicy === 0).slice(0, 5);
+    let msg = `🥗 ${taste}口味推荐：\n\n`;
+    filtered.forEach(d => { msg += `• ${d.dish} - ¥${d.price}${d.unit}\n  ${d.canteen} · ${d.location}\n`; });
+    this.addBotMessage(msg + '\n要不要我帮你找搭子一起去？', [{ text: '找搭子一起去', action: () => this.handleFindBuddy() }, { text: '查卡路里', action: () => this.handleCalorieQuery() }]);
+  },
+  handleOffers() {
+    const offers = typeof MOCK_OFFERS !== 'undefined' ? MOCK_OFFERS : [];
+    let msg = '🎫 今日优惠活动：\n\n';
+    offers.forEach(o => { const t = { new: '🆕', weekly: '📅', special: '⭐', group: '👥', time: '⏰' }; msg += `${t[o.type] || '🎫'} ${o.title}\n   ${o.desc} · 有效期至 ${o.expireDate}\n\n`; });
+    this.addBotMessage(msg + '💡 小贴士：周三全场8折最划算！', [{ text: '查看菜单', action: () => this.handleFoodRecommend() }, { text: '找搭子', action: () => this.handleFindBuddy() }]);
+  },
+  handleFindBuddy() {
+    const buddies = this.mockBuddies.slice(0, 3);
+    let msg = '👥 为你找到合适的搭子：\n\n';
+    buddies.forEach((b, i) => { msg += `${i + 1}. ${b.name} · ${b.dept}\n   匹配度 ${b.matchRate}% · ${b.reason}\n\n`; });
+    this.addBotMessage(msg + '💡 要我帮你发送邀请吗？', [
+      { text: '发送邀请', action: () => this.addBotMessage('已为你发送邀请！等待对方确认中... ⏳') },
+      { text: '换一批搭子', action: () => { const o = this.mockBuddies.slice(3, 5); let m2 = '🔄 换一批搭子：\n\n'; o.forEach((b, i) => { m2 += `${i + 1}. ${b.name} · ${b.dept}\n   匹配度 ${b.matchRate}% · ${b.reason}\n\n`; }); this.addBotMessage(m2); } }
+    ]);
+  },
+  handleCalorieQuery() {
+    const dishes = Object.entries(this.calorieDB).slice(0, 8);
+    let msg = '📊 卡路里查询：\n\n热门菜品热量参考：\n';
+    dishes.slice(0, 6).forEach(([name, info]) => { msg += `• ${name}：${info.cal} kcal\n`; });
+    this.addBotMessage(msg + '\n💡 输入具体菜名可以查询详细营养信息！\n例如：红烧肉多少卡？', [
+      { text: '红烧肉', action: () => this.queryCalorie('红烧肉') },
+      { text: '鸡胸肉', action: () => this.queryCalorie('鸡胸肉') },
+      { text: '米饭', action: () => this.queryCalorie('米饭') }
+    ]);
+  },
+  queryCalorie(dishName) {
+    const info = this.calorieDB[dishName];
+    if (info) {
+      this.addBotMessage(`🍖 ${dishName}（1份）\n\n热量：${info.cal} kcal\n蛋白质：${info.protein}g\n脂肪：${info.fat}g\n碳水：${info.carb}g\n\n💡 ${info.cal < 200 ? '低卡好选择！' : info.cal < 350 ? '适中的热量' : '建议搭配蔬菜食用'}`, [
+        { text: '搭配建议', action: () => this.addBotMessage('🥗 推荐搭配：\n• 配一份清炒时蔬\n• 用粗粮代替部分主食\n• 饭后散步15分钟') },
+        { text: '查看其他', action: () => this.handleCalorieQuery() }
+      ]);
+    } else {
+      this.addBotMessage(`抱歉，暂时没有"${dishName}"的数据 😅\n你可以试试查询：红烧肉、鸡胸肉、米饭等`);
+    }
+  },
+  handleFlowQuery() {
+    const levelText = { low: '🟢 人少', medium: '🟡 适中', high: '🔴 拥挤' };
+    const levelClass = { low: 'low', medium: 'medium', high: 'high' };
+    let msg = '📊 实时食堂客流数据：\n\n';
+    this.mockFlowData.forEach(f => { msg += `${f.location}：<span class="flow-indicator ${levelClass[f.level]}">${levelText[f.level]}</span>（${f.count}人）\n`; });
+    const best = this.mockFlowData.reduce((a, b) => a.count < b.count ? a : b);
+    this.addBotMessage(msg + '\n💡 建议：' + `现在去${best.location}最合适，人少不用排队！`, [{ text: '查看菜单', action: () => this.handleFoodRecommend() }, { text: '找搭子一起去', action: () => this.handleFindBuddy() }]);
+  },
+  handleHealthAdvice() {
+    const hour = new Date().getHours();
+    let msg = '💪 今日健康建议：\n\n';
+    if (hour < 10) msg += '🌅 早上好！\n• 记得吃早餐\n• 今日步数目标：8000步\n• 建议多补充蛋白质';
+    else if (hour < 14) msg += '☀️ 中午好！\n• 午餐建议：\n  - 一份蛋白质（鸡胸肉/鱼）\n  - 一份蔬菜\n  - 适量主食\n• 饭后散步15分钟';
+    else if (hour < 18) msg += '🌤️ 下午好！\n• 下午茶时间\n• 建议选择水果或坚果\n• 记得多喝水';
+    else msg += '🌙 晚上好！\n• 晚餐宜清淡\n• 避免太晚进食\n• 今日运动达标了吗？';
+    this.addBotMessage(msg + '\n\n📊 今日推荐：鸡胸肉沙拉（250卡，高蛋白）', [
+      { text: '查看低卡菜品', action: () => this.filterByTaste('清淡') },
+      { text: '查看步数', action: () => this.addBotMessage('📱 今日步数：6,842 步\n距离目标还差 1,158 步\n加油！💪') }
+    ]);
+  },
+  handleFeedback() {
+    this.addBotMessage('💬 有什么想反馈的吗？\n\n你可以告诉我：\n• 食堂环境问题\n• 菜品建议\n• 功能需求\n• 其他吐槽', [
+      { text: '食堂建议', action: () => { this.addUserMessage('食堂建议'); setTimeout(() => this.addBotMessage('📝 已记录你的反馈类型：食堂建议\n\n请具体描述一下你的建议，我会帮你转达给后勤部门。'), 500); } },
+      { text: '功能需求', action: () => { this.addUserMessage('功能需求'); setTimeout(() => this.addBotMessage('📝 已记录你的反馈类型：功能需求\n\n请描述你希望增加的功能，产品团队会认真考虑！'), 500); } }
+    ]);
+  },
+  handleChat() {
+    this.addBotMessage(['😊 今天天气不错，适合和搭子一起吃个饭！', '🤖 我是Mi搭子的AI助手，专门帮你解决"吃什么"和"找谁吃"的问题！', '💡 你知道吗？每周三食堂全场8折哦～', '🎯 我可以帮你：找吃的、查优惠、找搭子、查卡路里，快来试试吧！', '🍚 午饭时间到了吗？要不要我给你推荐一下？'][Math.floor(Math.random() * 5)], [
+      { text: '推荐菜品', action: () => this.handleFoodRecommend() },
+      { text: '找搭子', action: () => this.handleFindBuddy() }
+    ]);
+  },
+  addBotMessage(text, actions = []) {
+    const el = document.getElementById('ai-chat-messages');
+    const msg = document.createElement('div');
+    msg.className = 'ai-message bot';
+    let actionsHtml = '';
+    if (actions.length) {
+      actionsHtml = '<div class="action-btns">';
+      actions.forEach(a => { actionsHtml += `<button class="action-btn" data-action-id="${Date.now()}_${Math.random()}">${a.text}</button>`; });
+      actionsHtml += '</div>';
+    }
+    msg.innerHTML = `<div class="ai-message-avatar">🤖</div><div class="ai-message-content">${text.replace(/\n/g, '<br>')}${actionsHtml}</div>`;
+    el.appendChild(msg);
+    if (actions.length) { actions.forEach((a, i) => { const btn = msg.querySelectorAll('.action-btn')[i]; if (btn && a.action) btn.addEventListener('click', a.action); }); }
+    if (this.currentUserMessage && !this.isAPIMode) { this.saveLocalContext(this.currentUserMessage, text); this.currentUserMessage = null; }
+    this.scrollToBottom();
+  },
+  addUserMessage(text) {
+    const el = document.getElementById('ai-chat-messages');
+    const msg = document.createElement('div');
+    msg.className = 'ai-message user';
+    msg.innerHTML = `<div class="ai-message-avatar">😊</div><div class="ai-message-content">${text}</div>`;
+    el.appendChild(msg);
+    this.scrollToBottom();
+  },
+  showTyping() {
+    const el = document.getElementById('ai-chat-messages');
+    const t = document.createElement('div');
+    t.className = 'ai-message bot';
+    t.id = 'ai-typing';
+    t.innerHTML = `<div class="ai-message-avatar">🤖</div><div class="ai-message-content"><div class="ai-typing-indicator"><span></span><span></span><span></span></div></div>`;
+    el.appendChild(t);
+    this.scrollToBottom();
+  },
+  hideTyping() { const t = document.getElementById('ai-typing'); if (t) t.remove(); },
+  scrollToBottom() { const el = document.getElementById('ai-chat-messages'); el.scrollTop = el.scrollHeight; },
+  saveAPISettings() {
+    const apiKey = document.getElementById('ai-api-key').value.trim();
+    const model = document.getElementById('ai-model-select').value;
+    this.apiConfig.apiKey = apiKey;
+    this.apiConfig.model = model;
+    localStorage.setItem('ai_api_key', apiKey);
+    localStorage.setItem('ai_model', model);
+    const statusEl = document.getElementById('ai-status');
+    if (apiKey) { statusEl.textContent = 'MiMo模型在线 ✅'; this.addBotMessage('🎉 AI模型已连接！现在我是真正的智能助手了～\n\n试试问我："今天中午吃什么好？"'); }
+    else { statusEl.textContent = '本地模式 · 点击⚙️接入AI'; }
+    document.getElementById('ai-settings-panel').classList.add('hidden');
+  },
+  loadSavedSettings() {
+    const savedKey = localStorage.getItem('ai_api_key');
+    const savedModel = localStorage.getItem('ai_model');
+    if (savedKey) this.apiConfig.apiKey = savedKey;
+    if (savedModel) this.apiConfig.model = savedModel;
+  }
+};
+
 // ============ 应用初始化 ============
 document.addEventListener('DOMContentLoaded', function() {
   const avatarObserver = new MutationObserver(() => hydrateAvatarPhotos());
@@ -2383,6 +2915,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 初始化路由
   Router.init();
+
+  // 初始化 AI 助手
+  AIAssistant.init();
 
   // 网页端标识
   if (window.innerWidth >= 768) document.body.classList.add('is-desktop');
