@@ -6,14 +6,14 @@
 // ============ 内存存储 ============
 const store = {
   users: [
-    { id: 1, feishu_id: 'seed_u001', nickname: '小米同学', department: '中国区-新零售部', seat_number: '北京科技园-A幢-8F-023', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '天秤座', badge: '峰顶麦霸' },
-    { id: 2, feishu_id: 'seed_u002', nickname: '吴同学', department: '人力资源部', seat_number: '北京科技园-B幢-5F-112', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '巨蟹座' },
-    { id: 3, feishu_id: 'seed_u003', nickname: '李同学', department: '手机部-硬件工程部', seat_number: '北京科技园-C幢-12F-045', avatar_url: '', join_date: '2024-07-01', role: '社招', zodiac: '摩羯座' },
-    { id: 4, feishu_id: 'seed_u004', nickname: '王同学', department: '手机部-新业务部', seat_number: '北京科技园-D幢-3F-078', avatar_url: '', join_date: '2026-04-01', role: '校招生', zodiac: '双鱼座' },
-    { id: 5, feishu_id: 'seed_u005', nickname: '黄同学', department: '中国区-电商部', seat_number: '北京科技园-A幢-6F-156', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '白羊座' },
-    { id: 6, feishu_id: 'seed_u006', nickname: '赵同学', department: '技术部', seat_number: '北京科技园-E幢-10F-033', avatar_url: '', join_date: '2025-04-01', role: '社招', zodiac: '天蝎座' },
-    { id: 7, feishu_id: 'seed_u007', nickname: '周同学', department: '产品部', seat_number: '北京科技园-B幢-7F-091', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '射手座' },
-    { id: 8, feishu_id: 'seed_u008', nickname: '张同学', department: '设计部', seat_number: '北京科技园-D幢-9F-012', avatar_url: '', join_date: '2026-01-01', role: '校招生', zodiac: '水瓶座' },
+    { id: 1, feishu_id: 'seed_u001', nickname: '小米同学', department: '中国区-新零售部', seat_number: '北京科技园-A幢-8F-023', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '天秤座', badge: '峰顶麦霸', about_me: '喜欢AI和产品设计，偶尔爬山旅行，INFP' },
+    { id: 2, feishu_id: 'seed_u002', nickname: '吴同学', department: '人力资源部', seat_number: '北京科技园-B幢-5F-112', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '巨蟹座', about_me: '喜欢看电影和追剧，关注AI在HR的应用，ENFJ' },
+    { id: 3, feishu_id: 'seed_u003', nickname: '李同学', department: '手机部-硬件工程部', seat_number: '北京科技园-C幢-12F-045', avatar_url: '', join_date: '2024-07-01', role: '社招', zodiac: '摩羯座', about_me: '硬件工程师，喜欢打游戏和跑步，ISTJ' },
+    { id: 4, feishu_id: 'seed_u004', nickname: '王同学', department: '手机部-新业务部', seat_number: '北京科技园-D幢-3F-078', avatar_url: '', join_date: '2026-04-01', role: '校招生', zodiac: '双鱼座', about_me: '做新业务探索，喜欢设计和旅行，ENFP' },
+    { id: 5, feishu_id: 'seed_u005', nickname: '黄同学', department: '中国区-电商部', seat_number: '北京科技园-A幢-6F-156', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '白羊座', about_me: '电商运营，喜欢运动健身和美食探店，ESTP' },
+    { id: 6, feishu_id: 'seed_u006', nickname: '赵同学', department: '技术部', seat_number: '北京科技园-E幢-10F-033', avatar_url: '', join_date: '2025-04-01', role: '社招', zodiac: '天蝎座', about_me: '后端工程师，关注AI和大模型，喜欢打游戏，INTP' },
+    { id: 7, feishu_id: 'seed_u007', nickname: '周同学', department: '产品部', seat_number: '北京科技园-B幢-7F-091', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '射手座', about_me: '产品经理，喜欢旅行和看电影，ENTP' },
+    { id: 8, feishu_id: 'seed_u008', nickname: '张同学', department: '设计部', seat_number: '北京科技园-D幢-9F-012', avatar_url: '', join_date: '2026-01-01', role: '校招生', zodiac: '水瓶座', about_me: '视觉设计师，喜欢音乐和摄影，INFJ' },
   ],
   profiles: [
     { id: 1, user_id: 1, scene: 'lunch', taste_pref: '["清淡","米饭"]', time_pref: '12:00', location_pref: '园区食堂', budget: '20-40', social_pref: '轻松聊天', interests: '["AI","产品","旅行"]', commute_area: '', commute_time: '', transport: '' },
