@@ -165,14 +165,38 @@ function handleSelect(sql, params) {
     let results = [...store.profiles];
 
     if (sql.includes('WHERE')) {
-      if (sql.includes('user_id = ? AND scene = ?')) {
-        const userIdx = paramIndex(sql, 'user_id = ?');
+      // matching.js: WHERE p.scene = ? AND p.user_id != ?
+      if (sql.includes('p.scene = ? AND p.user_id != ?')) {
+        const sceneIdx = paramIndex(sql, 'p.scene = ?');
+        const userIdx  = paramIndex(sql, 'p.user_id != ?');
+        results = results.filter(p => p.scene === params[sceneIdx] && p.user_id !== Number(params[userIdx]));
+      } else if (sql.includes('user_id = ? AND scene = ?')) {
+        const userIdx  = paramIndex(sql, 'user_id = ?');
         const sceneIdx = paramIndex(sql, 'scene = ?');
+        results = results.filter(p => p.user_id === Number(params[userIdx]) && p.scene === params[sceneIdx]);
+      } else if (sql.includes('p.user_id = ? AND p.scene = ?')) {
+        const userIdx  = paramIndex(sql, 'p.user_id = ?');
+        const sceneIdx = paramIndex(sql, 'p.scene = ?');
         results = results.filter(p => p.user_id === Number(params[userIdx]) && p.scene === params[sceneIdx]);
       } else if (sql.includes('u.id = ?') || sql.includes('user_id = ?')) {
         const idx = Math.max(paramIndex(sql, 'u.id = ?'), paramIndex(sql, 'user_id = ?'));
         results = results.filter(p => p.user_id === Number(params[idx]));
       }
+    }
+
+    // JOIN users u — enrich with nickname, department, avatar_url, about_me
+    if (sql.includes('JOIN users') || sql.includes('join users')) {
+      results = results.map(p => {
+        const user = store.users.find(u => u.id === p.user_id);
+        if (!user) return p;
+        return {
+          ...p,
+          nickname: user.nickname,
+          department: user.department,
+          avatar_url: user.avatar_url || '',
+          about_me: user.about_me || '',
+        };
+      });
     }
 
     return [results];
