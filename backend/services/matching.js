@@ -70,9 +70,11 @@ async function ruleFilter(userId, scene) {
   for (const c of candidates) {
     let score = 0;
 
-    // 时间匹配：≤15min满分，15-30min递减，>30min排除
-    if (myProfile.time_pref && c.time_pref) {
-      const diff = timeDiffMinutes(myProfile.time_pref, c.time_pref);
+    // 时间匹配：通勤用 commute_time，午餐用 time_pref；≤15min满分，15-30min递减，>30min排除
+    const myTime = isCommute ? (myProfile.commute_time || myProfile.time_pref) : myProfile.time_pref;
+    const cTime  = isCommute ? (c.commute_time || c.time_pref) : c.time_pref;
+    if (myTime && cTime) {
+      const diff = timeDiffMinutes(myTime, cTime);
       if (diff !== null) {
         if (diff <= 15) score += w.time;
         else if (diff <= 30) score += Math.round(w.time * (1 - (diff - 15) / 15));
@@ -168,37 +170,8 @@ async function doMatch(userId, scene, seenUserIds = []) {
 
   const myProfile = myRows[0];
 
-  // 调 Python MiMo 服务精排，失败则保留规则分数
+  // 直接用规则分数构建结果，MiMo 精排异步进行（不阻塞返回）
   let mimoScores = null;
-  try {
-    const pyRes = await fetch(`${PYTHON_SVC}/match`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_profile: myProfile,
-        candidates: candidates.map(c => ({
-          candidate_id: String(c.user_id),
-          nickname: c.nickname,
-          department: c.department,
-          about_me: c.profile?.about_me || '',
-          interests: c.profile?.interests || [],
-          taste_pref: c.profile?.taste_pref || [],
-          time_pref: c.profile?.time_pref || '',
-          commute_area: c.profile?.commute_area || '',
-          transport: c.profile?.transport || '',
-          social_pref: c.profile?.social_pref || '',
-        })),
-        scene,
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-    const pyJson = await pyRes.json();
-    if (pyJson.code === 200 && Array.isArray(pyJson.data) && pyJson.data.length > 0) {
-      mimoScores = pyJson.data;
-    }
-  } catch (e) {
-    console.warn('[matching] Python MiMo 精排失败，降级规则分数:', e.message);
-  }
 
   const mimoResults = candidates.map(c => {
     const cProfile = c.profile || c;
@@ -252,8 +225,8 @@ async function doMatch(userId, scene, seenUserIds = []) {
 
   const pick3 = [...top, ...random];
 
-  // 写入 matches 表，MiMo 异步生成话术（15s 超时），失败用 fallback 兜底
-  for (const r of pick3) {
+  // 先写入 matches 表，异步并发生成破冰话术，不阻塞返回
+  await Promise.all(pick3.map(async (r) => {
     const candidateUserId = Number(r.candidate_id);
     const candidateProfile = candidates.find(c => c.user_id === candidateUserId)?.profile;
     r.icebreaker = { inviteMessage: '', icebreakerTopics: [] };
@@ -274,36 +247,27 @@ async function doMatch(userId, scene, seenUserIds = []) {
         const matchId = insertResult.insertId;
         const fallbackIce = buildFallbackIcebreaker(myProfile, candidateProfile, r, scene);
 
-        // 优先走 Python 服务生成破冰话术
-        const pyIcePromise = fetch(`${PYTHON_SVC}/icebreaker`, {
+        // 异步生成，不 await，不阻塞返回
+        fetch(`${PYTHON_SVC}/icebreaker`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ profile_a: myProfile, profile_b: candidateProfile, scene }),
           signal: AbortSignal.timeout(15000),
         })
-          .then(r => r.json())
-          .then(j => (j.data && j.data.inviteMessage) ? j.data : null)
-          .catch(() => null);
-
-        // Python 失败时降级到 Node mimo.js
-        const iceFn = scene === 'commute' ? generateCommuteIcebreaker : generateLunchIcebreaker;
-        const nodeIcePromise = pyIcePromise.then(ice => {
-          if (ice) return ice;
-          return Promise.race([
-            iceFn(myProfile, candidateProfile),
-            new Promise(resolve => setTimeout(() => resolve(null), 12000)),
-          ]).then(ice => (ice && ice.inviteMessage) ? ice : fallbackIce).catch(() => fallbackIce);
-        });
-
-        nodeIcePromise.then(ice => {
-          pool.query('UPDATE matches SET icebreaker = ? WHERE id = ?', [JSON.stringify(ice), matchId])
-            .catch(e => console.warn('[ICE] DB写入失败:', e.message));
-        });
+          .then(res => res.json())
+          .then(pyJson => {
+            const ice = (pyJson.data && pyJson.data.inviteMessage) ? pyJson.data : fallbackIce;
+            return pool.query('UPDATE matches SET icebreaker = ? WHERE id = ?', [JSON.stringify(ice), matchId]);
+          })
+          .catch(e => {
+            console.warn('[ICE] 生成失败，写入 fallback:', e.message);
+            return pool.query('UPDATE matches SET icebreaker = ? WHERE id = ?', [JSON.stringify(fallbackIce), matchId]);
+          });
       }
     } catch (e) {
       console.warn('写入匹配记录失败:', e.message);
     }
-  }
+  }));
 
   return pick3;
 }

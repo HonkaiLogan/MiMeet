@@ -1112,18 +1112,13 @@ const MatchLunchPage = {
         const reason = i.reason || '偏好相近';
         const canteen = i.recommended_canteen;
         const ice = i.icebreaker || {};
-        // Mock 破冰话术（如果没有真实数据）
-        const mockIce = {
-          inviteMessage: ice.inviteMessage || `嗨，看到我们也喜欢${tags[0] || '一起吃饭'}，要不要${name === '搭子' ? '一起' : name}中午一起去食堂？`,
-          icebreakerTopics: (ice.icebreakerTopics && ice.icebreakerTopics.length > 0) ? ice.icebreakerTopics : [`你们部门最近在忙什么？`, `食堂有推荐的菜吗？`],
-        };
         const iceHtml = `<div class="p-1.5 bg-orange-50 rounded-lg mb-1.5 ice-content" style="opacity:0;transition:opacity 0.5s">
             <p class="text-[10px] text-orange-500 mb-0.5">💬 邀请话术</p>
-            <p class="text-[11px] text-orange-800">${mockIce.inviteMessage}</p>
+            <p class="text-[11px] text-orange-800">${ice.inviteMessage || '生成中…'}</p>
           </div>
           <div class="p-1.5 bg-purple-50 rounded-lg mb-1.5 ice-content" style="opacity:0;transition:opacity 0.5s">
             <p class="text-[10px] text-purple-500 mb-0.5">🎯 破冰话题</p>
-            <div class="flex flex-wrap gap-1">${mockIce.icebreakerTopics.map(t => `<span class="px-1.5 py-0.5 bg-white rounded-full text-[10px] text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
+            <div class="flex flex-wrap gap-1">${(ice.icebreakerTopics && ice.icebreakerTopics.length > 0 ? ice.icebreakerTopics : ['生成中…']).map(t => `<span class="px-1.5 py-0.5 bg-white rounded-full text-[10px] text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
           </div>`;
         return `<div class="bg-white rounded-xl shadow-sm p-2.5 mb-2 card-appear" data-match-id="${matchId}">
   <div class="flex items-center justify-between mb-1.5">
@@ -1156,10 +1151,11 @@ const MatchLunchPage = {
         if (uid && !this.seenUserIds.includes(uid)) this.seenUserIds.push(uid);
       });
       c.querySelectorAll('.invite-btn,.detail-btn').forEach(b => b.addEventListener('click', (e) => Router.navigateTo('/invite', { userId: e.target.dataset.uid, matchId: e.target.dataset.matchId })));
-      // 1 秒延时显示破冰话术（模拟生成）
+      // 先显示卡片，轮询等 MiMo 话术生成后更新
       setTimeout(() => {
         c.querySelectorAll('.ice-content').forEach(el => { el.style.opacity = '1'; });
-      }, 1000);
+      }, 300);
+      mock.forEach(i => { if (i.match_id) pollIcebreaker(i.match_id, 'lunch'); });
     } catch (error) {
       document.getElementById('loading')?.classList.add('hidden');
       document.getElementById('results').classList.remove('hidden');
@@ -1377,18 +1373,13 @@ const MatchCommutePage = {
         const reason = i.reason || '路线相近';
         const commuteInfo = i.commute_info || null;
         const iceC = i.icebreaker || {};
-        // Mock 破冰话术
-        const mockIceC = {
-          inviteMessage: iceC.inviteMessage || `嗨，看我们路线差不多，要不要一起拼车上班？`,
-          icebreakerTopics: (iceC.icebreakerTopics && iceC.icebreakerTopics.length > 0) ? iceC.icebreakerTopics : [`你每天几点出发？`, `用什么打车软件？`],
-        };
         const iceHtmlC = `<div class="p-3 bg-blue-50 rounded-lg mb-3 ice-content" style="opacity:0;transition:opacity 0.5s">
             <p class="text-[10px] text-blue-500 mb-0.5">💬 邀请话术</p>
-            <p class="text-[11px] text-blue-800">${mockIceC.inviteMessage}</p>
+            <p class="text-[11px] text-blue-800">${iceC.inviteMessage || '生成中…'}</p>
           </div>
           <div class="p-1.5 bg-purple-50 rounded-lg mb-1.5 ice-content" style="opacity:0;transition:opacity 0.5s">
             <p class="text-[10px] text-purple-500 mb-0.5">🎯 破冰话题</p>
-            <div class="flex flex-wrap gap-1">${mockIceC.icebreakerTopics.map(t => `<span class="px-1.5 py-0.5 bg-white rounded-full text-[10px] text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
+            <div class="flex flex-wrap gap-1">${(iceC.icebreakerTopics && iceC.icebreakerTopics.length > 0 ? iceC.icebreakerTopics : ['生成中…']).map(t => `<span class="px-1.5 py-0.5 bg-white rounded-full text-[10px] text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
           </div>`;
         return `<div class="bg-white rounded-xl shadow-sm p-2.5 mb-2 card-appear" data-match-id="${matchId}">
   <div class="flex items-center justify-between mb-1.5">
@@ -1421,10 +1412,11 @@ const MatchCommutePage = {
         if (uid && !this.seenUserIds.includes(uid)) this.seenUserIds.push(uid);
       });
       c.querySelectorAll('.invite-btn,.detail-btn').forEach(b => b.addEventListener('click', (e) => Router.navigateTo('/invite', { userId: e.target.dataset.uid, matchId: e.target.dataset.matchId })));
-      // 1 秒延时显示破冰话术（模拟生成）
+      // 先显示卡片，轮询等 MiMo 话术生成后更新
       setTimeout(() => {
         c.querySelectorAll('.ice-content').forEach(el => { el.style.opacity = '1'; });
-      }, 1000);
+      }, 300);
+      mock.forEach(i => { if (i.match_id) pollIcebreaker(i.match_id, 'commute'); });
     } catch (error) {
       document.getElementById('loading')?.classList.add('hidden');
       document.getElementById('results').classList.remove('hidden');

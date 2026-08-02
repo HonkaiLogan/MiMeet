@@ -23,7 +23,7 @@ DAILY_HIGHLIGHTS = [
 ]
 
 
-async def _call_mimo_text(system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
+async def _call_mimo_text(system_prompt: str, user_prompt: str, temperature: float = 0.7, max_tokens: int = 150) -> str:
     """自由文本输出，不强制 json_object 格式，用于对话场景"""
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
@@ -33,7 +33,7 @@ async def _call_mimo_text(system_prompt: str, user_prompt: str, temperature: flo
                 "model": "mimo-v2.5",
                 "instructions": system_prompt,
                 "input": user_prompt,
-                "max_output_tokens": 500,
+                "max_output_tokens": max_tokens,
                 "reasoning": {"effort": "none"},
             },
         )
@@ -163,7 +163,7 @@ async def generate_lunch_icebreaker(profile_a: dict, profile_b: dict) -> dict:
         '输出：{"inviteMessage":"","icebreakerTopics":["",""]}'
     )
     try:
-        raw = await _call_mimo(sys_p, user_p, 0.8)
+        raw = await _call_mimo_text(sys_p, user_p, 0.8)
         parsed = json.loads(_extract_json(raw))
         if not parsed.get("inviteMessage"):
             raise ValueError("empty inviteMessage")
@@ -200,7 +200,7 @@ async def generate_commute_icebreaker(profile_a: dict, profile_b: dict) -> dict:
         '输出：{"inviteMessage":"","icebreakerTopics":["",""]}'
     )
     try:
-        raw = await _call_mimo(sys_p, user_p, 0.8)
+        raw = await _call_mimo_text(sys_p, user_p, 0.8)
         parsed = json.loads(_extract_json(raw))
         if not parsed.get("inviteMessage"):
             raise ValueError("empty inviteMessage")

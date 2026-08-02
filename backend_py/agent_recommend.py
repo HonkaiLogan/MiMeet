@@ -196,7 +196,7 @@ async def offers_chat(messages: list, user_profile: dict = None, is_initial: boo
         user_p = f"对话历史：\n{history_str}\n用户：{user_msg}" if history_str else user_msg
 
     try:
-        reply = await _call_mimo_text(sys_p, user_p, 0.8)
+        reply = await _call_mimo_text(sys_p, user_p, 0.8, max_tokens=500)
         return {"reply": reply}
     except Exception as e:
         safe_e = str(e).encode('ascii', errors='replace').decode('ascii')

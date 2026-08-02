@@ -17,6 +17,7 @@ const store = {
   ],
   profiles: [
     { id: 1, user_id: 1, scene: 'lunch', taste_pref: '["清淡","米饭"]', time_pref: '12:00', location_pref: '园区食堂', budget: '20-40', social_pref: '轻松聊天', interests: '["AI","产品","旅行"]', commute_area: '', commute_time: '', transport: '' },
+    { id: 15, user_id: 1, scene: 'commute', taste_pref: '[]', time_pref: '', location_pref: '', budget: '', social_pref: '', interests: '["AI","产品","旅行"]', commute_area: '回龙观', commute_time: '08:20', transport: '打车' },
     { id: 2, user_id: 2, scene: 'lunch', taste_pref: '["清淡","轻食"]', time_pref: '12:30', location_pref: '园区食堂', budget: '30-50', social_pref: '想认识新朋友', interests: '["AI","产品","电影"]', commute_area: '', commute_time: '', transport: '' },
     { id: 3, user_id: 2, scene: 'commute', taste_pref: '[]', time_pref: '', location_pref: '', budget: '', social_pref: '', interests: '["AI","产品","电影"]', commute_area: '回龙观', commute_time: '08:20', transport: '打车' },
     { id: 4, user_id: 3, scene: 'lunch', taste_pref: '["米饭","辣"]', time_pref: '12:00', location_pref: '园区食堂', budget: '20-40', social_pref: '安静吃饭', interests: '["技术","游戏","运动"]', commute_area: '', commute_time: '', transport: '' },
@@ -51,7 +52,7 @@ const store = {
   feishu_messages: [],
 };
 
-let nextId = { users: 9, profiles: 15, matches: 4, square_posts: 7, square_responses: 1, invites: 1, feedback: 1, daily_recommend: 1, feishu_messages: 1 };
+let nextId = { users: 9, profiles: 16, matches: 4, square_posts: 7, square_responses: 1, invites: 1, feedback: 1, daily_recommend: 1, feishu_messages: 1 };
 
 // ============ 工具函数 ============
 function parseJSON(val, fallback) {
@@ -438,6 +439,8 @@ function handleInsert(sql, params) {
 
   // INSERT INTO matches
   if (sql.includes('INTO matches')) {
+    // SQL: INSERT INTO matches (user_a_id, user_b_id, scene, score, reason, icebreaker)
+    // params 顺序与字段声明一致，没有 common_tags
     const newMatch = {
       id: nextId.matches++,
       user_a_id: Number(params[0]),
@@ -445,8 +448,7 @@ function handleInsert(sql, params) {
       scene: params[2],
       score: Number(params[3]) || 0,
       reason: params[4] || '',
-      common_tags: params[5] || '[]',
-      icebreaker: params[6] || '{}',
+      icebreaker: params[5] || '{}',
       feedback_a: null,
       feedback_b: null,
       status: 'pending',
@@ -538,6 +540,12 @@ function handleInsert(sql, params) {
 function handleUpdate(sql, params) {
   // UPDATE matches SET feedback_a/feedback_b
   if (sql.includes('UPDATE matches')) {
+    if (sql.includes('SET icebreaker = ?')) {
+      const matchId = Number(params[1]);
+      const match = store.matches.find(m => m.id === matchId);
+      if (match) match.icebreaker = params[0];
+      return [{ affectedRows: match ? 1 : 0 }];
+    }
     if (sql.includes('SET feedback_a = ?') || sql.includes('SET feedback_b = ?')) {
       const matchId = Number(params[1]);
       const match = store.matches.find(m => m.id === matchId);
