@@ -7,14 +7,14 @@
 
 // ============ 用户数据 ============
 const MOCK_USERS = {
-  'u001': { userId: 'u001', nickname: '小米同学', avatar: './assets/avatars/28.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生' },
-  'u002': { userId: 'u002', nickname: '吴同学',   avatar: './assets/avatars/4.jpg',  department: '人力资源部', joinDate: '2025-07-01', role: '校招生' },
-  'u003': { userId: 'u003', nickname: '李同学',   avatar: './assets/avatars/5.jpg',  department: '手机部', joinDate: '2024-07-01', role: '社招' },
-  'u004': { userId: 'u004', nickname: '王同学',   avatar: './assets/avatars/21.jpg', department: '新业务部', joinDate: '2026-04-01', role: '校招生' },
-  'u005': { userId: 'u005', nickname: '黄同学',   avatar: './assets/avatars/19.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生' },
-  'u006': { userId: 'u006', nickname: '赵同学',   avatar: './assets/avatars/2.jpg',  department: '集团技术委', joinDate: '2025-04-01', role: '社招' },
-  'u007': { userId: 'u007', nickname: '周同学',   avatar: './assets/avatars/30.jpg', department: '互联网业务部', joinDate: '2025-07-01', role: '校招生' },
-  'u008': { userId: 'u008', nickname: '张同学',   avatar: './assets/avatars/16.jpg', department: '生态链部', joinDate: '2026-01-01', role: '校招生' },
+  'u001': { userId: 'u001', nickname: '小米同学', avatar: './assets/avatars/28.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生', badge: '峰顶麦霸', badgeColor: 'orange' },
+  'u002': { userId: 'u002', nickname: '吴同学',   avatar: './assets/avatars/4.jpg',  department: '人力资源部', joinDate: '2025-07-01', role: '校招生', badge: '摸鱼仙人', badgeColor: 'purple' },
+  'u003': { userId: 'u003', nickname: '李同学',   avatar: './assets/avatars/5.jpg',  department: '手机部', joinDate: '2024-07-01', role: '社招', badge: '代码剑圣', badgeColor: 'blue' },
+  'u004': { userId: 'u004', nickname: '王同学',   avatar: './assets/avatars/21.jpg', department: '新业务部', joinDate: '2026-04-01', role: '校招生', badge: '灵感猎手', badgeColor: 'cyan' },
+  'u005': { userId: 'u005', nickname: '黄同学',   avatar: './assets/avatars/19.jpg', department: '中国区', joinDate: '2025-07-01', role: '校招生', badge: '食堂鉴赏家', badgeColor: 'green' },
+  'u006': { userId: 'u006', nickname: '赵同学',   avatar: './assets/avatars/2.jpg',  department: '集团技术委', joinDate: '2025-04-01', role: '社招', badge: '回龙观车神', badgeColor: 'pink' },
+  'u007': { userId: 'u007', nickname: '周同学',   avatar: './assets/avatars/30.jpg', department: '互联网业务部', joinDate: '2025-07-01', role: '校招生', badge: '午夜极客', badgeColor: 'purple' },
+  'u008': { userId: 'u008', nickname: '张同学',   avatar: './assets/avatars/16.jpg', department: '生态链部', joinDate: '2026-01-01', role: '校招生', badge: '摄影狂魔', badgeColor: 'cyan' },
   'u009': { userId: 'u009', nickname: '陈同学',   avatar: './assets/avatars/33.jpg', department: '汽车部', joinDate: '2025-07-01', role: '校招生' },
   'u010': { userId: 'u010', nickname: '林同学',   avatar: './assets/avatars/49.jpg', department: '手机部', joinDate: '2025-07-01', role: '校招生' },
   'u011': { userId: 'u011', nickname: '刘同学',   avatar: './assets/avatars/23.jpg', department: '人力资源部', joinDate: '2025-07-01', role: '校招生' },

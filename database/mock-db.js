@@ -6,7 +6,7 @@
 // ============ 内存存储 ============
 const store = {
   users: [
-    { id: 1, feishu_id: 'seed_u001', nickname: '小米同学', department: '中国区-新零售部', seat_number: '北京科技园-A幢-8F-023', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '天秤座' },
+    { id: 1, feishu_id: 'seed_u001', nickname: '小米同学', department: '中国区-新零售部', seat_number: '北京科技园-A幢-8F-023', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '天秤座', badge: '' },
     { id: 2, feishu_id: 'seed_u002', nickname: '吴同学', department: '人力资源部', seat_number: '北京科技园-B幢-5F-112', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '巨蟹座' },
     { id: 3, feishu_id: 'seed_u003', nickname: '李同学', department: '手机部-硬件工程部', seat_number: '北京科技园-C幢-12F-045', avatar_url: '', join_date: '2024-07-01', role: '社招', zodiac: '摩羯座' },
     { id: 4, feishu_id: 'seed_u004', nickname: '王同学', department: '手机部-新业务部', seat_number: '北京科技园-D幢-3F-078', avatar_url: '', join_date: '2026-04-01', role: '校招生', zodiac: '双鱼座' },
@@ -527,6 +527,14 @@ function handleUpdate(sql, params) {
       if (match) match.status = params[0];
       return [{ affectedRows: match ? 1 : 0 }];
     }
+  }
+
+  // UPDATE users SET badge = ?
+  if (sql.includes('UPDATE users') && sql.includes('SET badge = ?')) {
+    const feishuId = params[1];
+    const user = store.users.find(u => u.feishu_id === feishuId);
+    if (user) { user.badge = params[0]; return [{ affectedRows: 1 }]; }
+    return [{ affectedRows: 0 }];
   }
 
   // UPDATE square_posts SET status = 'expired'

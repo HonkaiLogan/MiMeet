@@ -182,4 +182,24 @@ Generate daily recommendation:`;
   }
 }
 
-module.exports = { understandProfile, matchCandidates, generateLunchIcebreaker, generateCommuteIcebreaker, dailyRecommendation };
+/** ⑤ 生成用户称号（从 About Me 文档提炼） */
+async function generateBadge(aboutMeContent) {
+  const sys = `你是"Mi搭子"App的用户称号生成器。
+根据用户的About Me文档内容，生成一个5字以内的中二风格称号。
+要求：简短有力、略带中二气质、能概括此人特质、中文。
+示例："代码剑圣"、"摸鱼仙人"、"回龙观车神"、"食堂鉴赏家"、"午夜极客"、"灵感猎手"。
+输出格式：{"badge":"称号"}`;
+
+  const user = `用户About Me内容：${aboutMeContent.slice(0, 2000)}
+输出JSON：`;
+
+  try {
+    const raw = await _callMiMo(sys, user, 0.9);
+    const parsed = JSON.parse(_extractJSON(raw));
+    return parsed.badge || '峰顶麦霸';
+  } catch {
+    return '峰顶麦霸';
+  }
+}
+
+module.exports = { understandProfile, matchCandidates, generateLunchIcebreaker, generateCommuteIcebreaker, dailyRecommendation, generateBadge };

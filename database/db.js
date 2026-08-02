@@ -35,10 +35,14 @@ async function initDB() {
         join_date   DATE,
         role        VARCHAR(32),
         zodiac      VARCHAR(16),
+        badge       VARCHAR(32) DEFAULT '',
         created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // 兼容已有表：尝试添加 badge 列
+    try { await conn.query('ALTER TABLE users ADD COLUMN badge VARCHAR(32) DEFAULT ""'); } catch {}
 
     // ========== 用户画像（按场景一行） ==========
     await conn.query(`
