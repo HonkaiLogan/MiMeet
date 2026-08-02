@@ -24,7 +24,7 @@ from mimo_client import (
 )
 from agent_recommend import recommend_food, recommend_offers, offers_chat
 
-app = FastAPI(title="MiMeet MiMo Service", version="1.0.0")
+app = FastAPI(title="MiMeet MiMo Service", version="0.0.1")
 
 app.add_middleware(
     CORSMiddleware,

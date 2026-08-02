@@ -1,6 +1,6 @@
 {
   "name": "mimeet",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "MiMeet - Meet你的命中搭子，基于 Xiaomi MiMo 的职场生活轻社交连接器",
   "main": "backend/server.js",
   "scripts": {
