@@ -3,6 +3,7 @@
  * 规则初筛（纯代码） + Python MiMo 精排 + 破冰话术生成
  */
 const { pool } = require('../../database');
+// 破冰话术统一走 Python 服务，Node mimo.js 仅作降级备用
 const { generateLunchIcebreaker, generateCommuteIcebreaker } = require('./mimo');
 
 const PYTHON_SVC = process.env.PYTHON_SVC_URL || 'http://localhost:8000';
@@ -272,15 +273,32 @@ async function doMatch(userId, scene, seenUserIds = []) {
       if (candidateProfile) {
         const matchId = insertResult.insertId;
         const fallbackIce = buildFallbackIcebreaker(myProfile, candidateProfile, r, scene);
+
+        // 优先走 Python 服务生成破冰话术
+        const pyIcePromise = fetch(`${PYTHON_SVC}/icebreaker`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile_a: myProfile, profile_b: candidateProfile, scene }),
+          signal: AbortSignal.timeout(15000),
+        })
+          .then(r => r.json())
+          .then(j => (j.data && j.data.inviteMessage) ? j.data : null)
+          .catch(() => null);
+
+        // Python 失败时降级到 Node mimo.js
         const iceFn = scene === 'commute' ? generateCommuteIcebreaker : generateLunchIcebreaker;
-        const timeout = new Promise(resolve => setTimeout(() => resolve(null), 15000));
-        Promise.race([iceFn(myProfile, candidateProfile), timeout])
-          .then(ice => (ice && ice.inviteMessage) ? ice : fallbackIce)
-          .catch(() => fallbackIce)
-          .then(ice => {
-            pool.query('UPDATE matches SET icebreaker = ? WHERE id = ?', [JSON.stringify(ice), matchId])
-              .catch(e => console.warn('[ICE] DB写入失败:', e.message));
-          });
+        const nodeIcePromise = pyIcePromise.then(ice => {
+          if (ice) return ice;
+          return Promise.race([
+            iceFn(myProfile, candidateProfile),
+            new Promise(resolve => setTimeout(() => resolve(null), 12000)),
+          ]).then(ice => (ice && ice.inviteMessage) ? ice : fallbackIce).catch(() => fallbackIce);
+        });
+
+        nodeIcePromise.then(ice => {
+          pool.query('UPDATE matches SET icebreaker = ? WHERE id = ?', [JSON.stringify(ice), matchId])
+            .catch(e => console.warn('[ICE] DB写入失败:', e.message));
+        });
       }
     } catch (e) {
       console.warn('写入匹配记录失败:', e.message);
