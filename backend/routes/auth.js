@@ -19,7 +19,7 @@ const crypto = require('crypto');
 const router = express.Router();
 
 const { getTenantAccessToken } = require('../services/feishu');
-const { pool } = require('../../database/mock-db');
+const { pool } = require('../../database');
 
 const FEISHU_APP_ID = process.env.FEISHU_APP_ID || '';
 const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET || '';

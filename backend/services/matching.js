@@ -2,7 +2,7 @@
  * 匹配引擎
  * 规则初筛（纯代码） + 破冰话术 MiMo 生成
  */
-const { pool } = require('../../database/db');
+const { pool } = require('../../database');
 const { generateLunchIcebreaker, generateCommuteIcebreaker } = require('./mimo');
 
 // 真实园区食堂，按口味标签分组

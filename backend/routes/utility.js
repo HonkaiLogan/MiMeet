@@ -7,7 +7,7 @@
  *   GET /route         → { distance, duration, cost }
  */
 const express = require('express');
-const { pool } = require('../../database/mock-db');
+const { pool } = require('../../database');
 const router = express.Router();
 
 function todayStr() {

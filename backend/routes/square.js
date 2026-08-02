@@ -2,7 +2,7 @@
  * 搭子广场 API
  */
 const express = require('express');
-const { pool } = require('../../database/db');
+const { pool } = require('../../database');
 const { sendMessage, buildInviteCard } = require('../services/feishu');
 const router = express.Router();
 

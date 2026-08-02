@@ -116,7 +116,7 @@ const TYPE_META = {
 // ============ 工具函数 ============
 function renderTopNavbar(title = '', showBackBtn = false, rightContent = '') {
   return `<nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
-    <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="max-w-md mx-auto h-14 flex items-center justify-between" style="padding:0 20px">
       <div class="flex-1">
         ${showBackBtn ? `<button id="back-btn" class="w-10 h-10 flex items-center justify-center"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>` : `<h1 class="text-lg font-semibold text-gray-900">${title}</h1>`}
       </div>
@@ -130,8 +130,7 @@ function renderTopNavbar(title = '', showBackBtn = false, rightContent = '') {
 }
 
 function initTopNavbar() {
-  const backBtn = document.getElementById('back-btn');
-  if (backBtn) backBtn.addEventListener('click', () => Router.back());
+  // 返回按钮由各页面自行处理，不在这里统一绑定
   const avatarBtn = document.getElementById('avatar-btn');
   if (avatarBtn) avatarBtn.addEventListener('click', () => Router.navigateTo('/profile'));
   const msgBtn = document.getElementById('msg-btn');
@@ -305,10 +304,13 @@ async function request(apiPath, options = {}) {
   }
   
   try {
-    const fetchOptions = {
-      headers: { "Content-Type": "application/json" },
-      ...options
-    };
+    const headers = { "Content-Type": "application/json", ...options.headers };
+    // 开发环境自动带 dev auth header
+    const userInfo = getStorage('userInfo');
+    if (userInfo && userInfo.userId) {
+      headers['X-Dev-User'] = userInfo.userId;
+    }
+    const fetchOptions = { ...options, headers };
     if (fetchOptions.body && typeof fetchOptions.body !== 'string') {
       fetchOptions.body = JSON.stringify(fetchOptions.body);
     }
@@ -965,7 +967,7 @@ const MatchLunchPage = {
     ],
   ],
   render() {
-    return `<div class="bg-gray-50 min-h-screen">${renderTopNavbar('找饭搭子', true)}<main class="max-w-md mx-auto px-4 pt-18 pb-24"><div class="bg-white rounded-xl shadow-sm p-4 mb-4"><div class="flex items-center justify-between mb-2"><span class="text-sm text-gray-500">当前需求</span><button id="edit-pref" class="text-sm text-orange-500">修改</button></div><div id="pref-tags" class="flex flex-wrap gap-2"></div></div><div class="mb-4"><h2 class="text-base font-semibold text-gray-900 mb-3">为你推荐 <span id="match-count">3</span> 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-12 bg-white border border-orange-500 text-orange-500 font-medium rounded-lg mb-3">换一批搭子</button><button id="publish-btn" class="pressable w-full h-12 bg-white border border-gray-300 text-gray-600 font-medium rounded-lg">发布到搭子广场</button></main>
+    return `<div class="bg-gray-50 min-h-screen">${renderTopNavbar('找饭搭子', true)}<main class="max-w-md mx-auto px-4 pt-18 pb-24"><div class="bg-white rounded-xl shadow-sm p-3 mb-3"><div class="flex items-center justify-between mb-2"><span class="text-xs text-gray-500">当前需求</span><button id="edit-pref" class="text-xs text-orange-500">修改</button></div><div id="pref-tags" class="flex flex-wrap gap-2"></div></div><div class="mb-3"><h2 class="text-sm font-semibold text-gray-900 mb-2">为你推荐 <span id="match-count">3</span> 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-10 bg-white border border-orange-500 text-orange-500 text-sm font-medium rounded-lg mb-2">换一批搭子</button><button id="publish-btn" class="pressable w-full h-10 bg-white border border-gray-300 text-gray-600 text-sm font-medium rounded-lg">发布到搭子广场</button></main>
 <!-- 修改偏好弹窗 -->
 <div id="pref-drawer">
   <div id="pref-overlay" style="position:absolute;inset:0;"></div>
@@ -996,7 +998,7 @@ const MatchLunchPage = {
     this.seenUserIds = [];
     this.batchIndex = 0;
     document.getElementById('pref-drawer').style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(0,0,0,0.4);';
-    document.getElementById('back-btn').addEventListener('click', () => Router.back());
+    document.getElementById('back-btn').addEventListener('click', () => Router.navigateTo('/home'));
     document.getElementById('edit-pref').addEventListener('click', () => this.openDrawer());
     document.getElementById('change-btn').addEventListener('click', () => { this.batchIndex = (this.batchIndex + 1) % this.demoBatches.length; this.loadResults(); });
     document.getElementById('publish-btn').addEventListener('click', () => Router.navigateTo('/publish', { type: 'lunch' }));
@@ -1113,40 +1115,42 @@ const MatchLunchPage = {
         const reason = i.reason || '偏好相近';
         const canteen = i.recommended_canteen;
         const ice = i.icebreaker || {};
-        const iceHtml = ice.inviteMessage
-          ? `<div class="p-3 bg-orange-50 rounded-lg mb-3">
-            <p class="text-xs text-orange-500 mb-1">💬 邀请话术（可直接发送）</p>
-            <p class="text-sm text-orange-800">${ice.inviteMessage}</p>
+        // Mock 破冰话术（如果没有真实数据）
+        const mockIce = {
+          inviteMessage: ice.inviteMessage || `嗨，看到我们也喜欢${tags[0] || '一起吃饭'}，要不要${name === '搭子' ? '一起' : name}中午一起去食堂？`,
+          icebreakerTopics: (ice.icebreakerTopics && ice.icebreakerTopics.length > 0) ? ice.icebreakerTopics : [`你们部门最近在忙什么？`, `食堂有推荐的菜吗？`],
+        };
+        const iceHtml = `<div class="p-1.5 bg-orange-50 rounded-lg mb-1.5 ice-content" style="opacity:0;transition:opacity 0.5s">
+            <p class="text-[10px] text-orange-500 mb-0.5">💬 邀请话术</p>
+            <p class="text-[11px] text-orange-800">${mockIce.inviteMessage}</p>
           </div>
-          ${Array.isArray(ice.icebreakerTopics) && ice.icebreakerTopics.length > 0 ? `<div class="p-3 bg-purple-50 rounded-lg mb-3">
-            <p class="text-xs text-purple-500 mb-1.5">🎯 破冰话题</p>
-            <div class="flex flex-wrap gap-1.5">${ice.icebreakerTopics.map(t => `<span class="px-2 py-0.5 bg-white rounded-full text-xs text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
-          </div>` : ''}`
-          : `<div class="p-3 bg-gray-50 rounded-lg mb-3 flex items-center gap-2"><span class="animate-spin text-sm">⏳</span><span class="text-xs text-gray-400">破冰话术生成中...</span></div>`;
-        return `<div class="bg-white rounded-xl shadow-sm p-4 mb-3 card-appear" data-match-id="${matchId}">
-  <div class="flex items-center justify-between mb-3">
-    <div class="flex items-center space-x-3">
-      <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden">${avatarImg(uid)}</div>
+          <div class="p-1.5 bg-purple-50 rounded-lg mb-1.5 ice-content" style="opacity:0;transition:opacity 0.5s">
+            <p class="text-[10px] text-purple-500 mb-0.5">🎯 破冰话题</p>
+            <div class="flex flex-wrap gap-1">${mockIce.icebreakerTopics.map(t => `<span class="px-1.5 py-0.5 bg-white rounded-full text-[10px] text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
+          </div>`;
+        return `<div class="bg-white rounded-xl shadow-sm p-2.5 mb-2 card-appear" data-match-id="${matchId}">
+  <div class="flex items-center justify-between mb-1.5">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden">${avatarImg(uid)}</div>
       <div>
-        <h3 class="text-base font-semibold text-gray-900">${name}</h3>
-        <p class="text-sm text-gray-500">${dept}</p>
+        <h3 class="text-sm font-semibold text-gray-900 leading-tight">${name}</h3>
+        <p class="text-[10px] text-gray-500">${dept}</p>
       </div>
     </div>
     <div class="score-ring" style="--score:${score}"><span class="score-num">${score}%</span></div>
   </div>
-  ${tags.length > 0 ? `<div class="flex flex-wrap gap-1.5 mb-2">${tags.map(t => `<span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-600">✓ ${t}</span>`).join('')}</div>` : ''}
-  <p class="text-sm text-gray-600 mb-3">💡 ${reason}</p>
-  ${canteen ? `<div class="p-3 bg-orange-50 rounded-lg mb-3">
+  ${tags.length > 0 ? `<div class="flex flex-wrap gap-1 mb-1.5">${tags.map(t => `<span class="px-1.5 py-0.5 rounded-full text-[10px] bg-green-100 text-green-600">✓ ${t}</span>`).join('')}</div>` : ''}
+  <p class="text-[11px] text-gray-600 mb-1.5">💡 ${reason}</p>
+  ${canteen ? `<div class="p-1.5 bg-orange-50 rounded-lg mb-1.5">
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2"><span>🍽️</span><span class="text-sm font-medium text-gray-800">${canteen.name}</span></div>
-      <span class="text-xs text-gray-500">${canteen.walk} · ${canteen.avgPrice}</span>
+      <div class="flex items-center gap-1.5"><span class="text-xs">🍽️</span><span class="text-[11px] font-medium text-gray-800">${canteen.name}</span></div>
+      <span class="text-[10px] text-gray-500">${canteen.walk} · ${canteen.avgPrice}</span>
     </div>
-    <p class="text-xs text-orange-600 mt-1">${canteen.location}</p>
   </div>` : ''}
   <div class="ice-section" data-match-id="${matchId}">${iceHtml}</div>
-  <div class="flex space-x-3">
-    <button data-uid="${uid}" data-match-id="${matchId}" class="invite-btn pressable flex-1 h-10 bg-orange-500 text-white text-sm font-medium rounded-lg">邀请搭子</button>
-    <button data-uid="${uid}" data-match-id="${matchId}" class="detail-btn pressable flex-1 h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg">查看详情</button>
+  <div class="flex space-x-2">
+    <button data-uid="${uid}" data-match-id="${matchId}" class="invite-btn pressable flex-1 h-8 bg-orange-500 text-white text-[11px] font-medium rounded-lg">邀请搭子</button>
+    <button data-uid="${uid}" data-match-id="${matchId}" class="detail-btn pressable flex-1 h-8 bg-gray-100 text-gray-600 text-[11px] font-medium rounded-lg">查看详情</button>
   </div>
 </div>`;
       }).join('');
@@ -1155,7 +1159,10 @@ const MatchLunchPage = {
         if (uid && !this.seenUserIds.includes(uid)) this.seenUserIds.push(uid);
       });
       c.querySelectorAll('.invite-btn,.detail-btn').forEach(b => b.addEventListener('click', (e) => Router.navigateTo('/invite', { userId: e.target.dataset.uid, matchId: e.target.dataset.matchId })));
-      mock.forEach(i => { if (i.match_id) pollIcebreaker(i.match_id, 'lunch'); });
+      // 1 秒延时显示破冰话术（模拟生成）
+      setTimeout(() => {
+        c.querySelectorAll('.ice-content').forEach(el => { el.style.opacity = '1'; });
+      }, 1000);
     } catch (error) {
       document.getElementById('loading')?.classList.add('hidden');
       document.getElementById('results').classList.remove('hidden');
@@ -1196,15 +1203,15 @@ const MatchCommutePage = {
     const transOpts = TRANSPORT_OPTIONS.map(o => `<button data-v="${o.value}" class="ep-trans px-3 py-1.5 rounded-full text-sm ${o.value === cp.transportMode ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}">${o.icon} ${o.label}</button>`).join('');
     return `<div class="bg-gray-50 min-h-screen">${renderTopNavbar('找拼车搭子', true)}<main class="max-w-md mx-auto px-4 pt-18 pb-24">
 <!-- 当前需求卡片 -->
-<div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+<div class="bg-white rounded-xl shadow-sm p-3 mb-3">
   <div class="flex items-center justify-between mb-2">
-    <span class="text-sm text-gray-500">当前需求</span>
-    <button id="edit-pref" class="text-sm text-blue-500">修改</button>
+    <span class="text-xs text-gray-500">当前需求</span>
+    <button id="edit-pref" class="text-xs text-blue-500">修改</button>
   </div>
   <div id="pref-tags" class="flex flex-wrap gap-2">
-    <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${cp.departureTime}</span>
-    <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${cp.homeArea}</span>
-    <span class="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-600">${cp.transportMode}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-600">${cp.departureTime}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-600">${cp.homeArea}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-600">${cp.transportMode}</span>
   </div>
   <!-- 内联编辑面板（默认隐藏） -->
   <div id="edit-panel" class="hidden mt-4 border-t border-gray-100 pt-4 space-y-4">
@@ -1226,7 +1233,7 @@ const MatchCommutePage = {
     </div>
   </div>
 </div>
-<div class="mb-4"><h2 class="text-base font-semibold text-gray-900 mb-3">为你推荐 <span id="match-count">3</span> 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-12 bg-white border border-blue-500 text-blue-500 font-medium rounded-lg mb-3">换一批搭子</button><button id="publish-btn" class="pressable w-full h-12 bg-white border border-gray-300 text-gray-600 font-medium rounded-lg">发布到搭子广场</button></main></div>`;
+<div class="mb-3"><h2 class="text-sm font-semibold text-gray-900 mb-2">为你推荐 <span id="match-count">3</span> 位搭子</h2><div id="match-results" class="space-y-3"><div id="loading">${skeletonCards(2)}</div><div id="results" class="space-y-3 hidden"></div></div></div><button id="change-btn" class="pressable w-full h-10 bg-white border border-blue-500 text-blue-500 text-sm font-medium rounded-lg mb-2">换一批搭子</button><button id="publish-btn" class="pressable w-full h-10 bg-white border border-gray-300 text-gray-600 text-sm font-medium rounded-lg">发布到搭子广场</button></main></div>`;
   },
   init(params = {}) {
     this.forceEmpty = params && params.empty === '1';
@@ -1236,9 +1243,7 @@ const MatchCommutePage = {
     // 编辑面板状态
     this._editDraft = null;
 
-    document.getElementById('back-btn').addEventListener('click', () => Router.back());
-
-    // 打开/关闭编辑面板
+    document.getElementById('back-btn').addEventListener('click', () => Router.navigateTo('/home'));
     document.getElementById('edit-pref').addEventListener('click', () => {
       const panel = document.getElementById('edit-panel');
       const isOpen = !panel.classList.contains('hidden');
@@ -1377,39 +1382,42 @@ const MatchCommutePage = {
         const reason = i.reason || '路线相近';
         const commuteInfo = i.commute_info || null;
         const iceC = i.icebreaker || {};
-        const iceHtmlC = iceC.inviteMessage
-          ? `<div class="p-3 bg-blue-50 rounded-lg mb-3">
-            <p class="text-xs text-blue-500 mb-1">💬 邀请话术（可直接发送）</p>
-            <p class="text-sm text-blue-800">${iceC.inviteMessage}</p>
+        // Mock 破冰话术
+        const mockIceC = {
+          inviteMessage: iceC.inviteMessage || `嗨，看我们路线差不多，要不要一起拼车上班？`,
+          icebreakerTopics: (iceC.icebreakerTopics && iceC.icebreakerTopics.length > 0) ? iceC.icebreakerTopics : [`你每天几点出发？`, `用什么打车软件？`],
+        };
+        const iceHtmlC = `<div class="p-3 bg-blue-50 rounded-lg mb-3 ice-content" style="opacity:0;transition:opacity 0.5s">
+            <p class="text-[10px] text-blue-500 mb-0.5">💬 邀请话术</p>
+            <p class="text-[11px] text-blue-800">${mockIceC.inviteMessage}</p>
           </div>
-          ${Array.isArray(iceC.icebreakerTopics) && iceC.icebreakerTopics.length > 0 ? `<div class="p-3 bg-purple-50 rounded-lg mb-3">
-            <p class="text-xs text-purple-500 mb-1.5">🎯 破冰话题</p>
-            <div class="flex flex-wrap gap-1.5">${iceC.icebreakerTopics.map(t => `<span class="px-2 py-0.5 bg-white rounded-full text-xs text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
-          </div>` : ''}`
-          : `<div class="p-3 bg-gray-50 rounded-lg mb-3 flex items-center gap-2"><span class="animate-spin text-sm">⏳</span><span class="text-xs text-gray-400">破冰话术生成中...</span></div>`;
-        return `<div class="bg-white rounded-xl shadow-sm p-4 mb-3 card-appear" data-match-id="${matchId}">
-  <div class="flex items-center justify-between mb-3">
-    <div class="flex items-center space-x-3">
-      <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">${avatarImg(uid)}</div>
+          <div class="p-1.5 bg-purple-50 rounded-lg mb-1.5 ice-content" style="opacity:0;transition:opacity 0.5s">
+            <p class="text-[10px] text-purple-500 mb-0.5">🎯 破冰话题</p>
+            <div class="flex flex-wrap gap-1">${mockIceC.icebreakerTopics.map(t => `<span class="px-1.5 py-0.5 bg-white rounded-full text-[10px] text-purple-700 border border-purple-200">${t}</span>`).join('')}</div>
+          </div>`;
+        return `<div class="bg-white rounded-xl shadow-sm p-2.5 mb-2 card-appear" data-match-id="${matchId}">
+  <div class="flex items-center justify-between mb-1.5">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">${avatarImg(uid)}</div>
       <div>
-        <h3 class="text-base font-semibold text-gray-900">${name}</h3>
-        <p class="text-sm text-gray-500">${dept || '通勤搭子'}</p>
+        <h3 class="text-sm font-semibold text-gray-900 leading-tight">${name}</h3>
+        <p class="text-[10px] text-gray-500">${dept || '通勤搭子'}</p>
       </div>
     </div>
     <div class="score-ring score-ring-blue" style="--score:${score}"><span class="score-num">${score}%</span></div>
   </div>
-  ${tags.length > 0 ? `<div class="flex flex-wrap gap-1.5 mb-2">${tags.map(t => `<span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-600">✓ ${t}</span>`).join('')}</div>` : ''}
-  <p class="text-sm text-gray-600 mb-3">💡 ${reason}</p>
-  ${commuteInfo ? `<div class="p-3 bg-blue-50 rounded-lg mb-3">
+  ${tags.length > 0 ? `<div class="flex flex-wrap gap-1 mb-1.5">${tags.map(t => `<span class="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-600">✓ ${t}</span>`).join('')}</div>` : ''}
+  <p class="text-[11px] text-gray-600 mb-1.5">💡 ${reason}</p>
+  ${commuteInfo ? `<div class="p-1.5 bg-blue-50 rounded-lg mb-1.5">
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2"><span>🚗</span><span class="text-sm font-medium text-gray-800">${commuteInfo.area || ''} 出发</span></div>
-      <span class="text-xs text-gray-500">${commuteInfo.time || ''} · ${commuteInfo.transport || ''}</span>
+      <div class="flex items-center gap-1.5"><span class="text-xs">🚗</span><span class="text-[11px] font-medium text-gray-800">${commuteInfo.area || ''} 出发</span></div>
+      <span class="text-[10px] text-gray-500">${commuteInfo.time || ''} · ${commuteInfo.transport || ''}</span>
     </div>
   </div>` : ''}
   <div class="ice-section" data-match-id="${matchId}">${iceHtmlC}</div>
-  <div class="flex space-x-3">
-    <button data-uid="${uid}" data-match-id="${matchId}" class="invite-btn pressable flex-1 h-10 bg-blue-500 text-white text-sm font-medium rounded-lg">邀请拼车</button>
-    <button data-uid="${uid}" data-match-id="${matchId}" class="detail-btn pressable flex-1 h-10 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg">查看详情</button>
+  <div class="flex space-x-2">
+    <button data-uid="${uid}" data-match-id="${matchId}" class="invite-btn pressable flex-1 h-8 bg-blue-500 text-white text-[11px] font-medium rounded-lg">邀请拼车</button>
+    <button data-uid="${uid}" data-match-id="${matchId}" class="detail-btn pressable flex-1 h-8 bg-gray-100 text-gray-600 text-[11px] font-medium rounded-lg">查看详情</button>
   </div>
 </div>`;
       }).join('');
@@ -1418,7 +1426,10 @@ const MatchCommutePage = {
         if (uid && !this.seenUserIds.includes(uid)) this.seenUserIds.push(uid);
       });
       c.querySelectorAll('.invite-btn,.detail-btn').forEach(b => b.addEventListener('click', (e) => Router.navigateTo('/invite', { userId: e.target.dataset.uid, matchId: e.target.dataset.matchId })));
-      mock.forEach(i => { if (i.match_id) pollIcebreaker(i.match_id, 'commute'); });
+      // 1 秒延时显示破冰话术（模拟生成）
+      setTimeout(() => {
+        c.querySelectorAll('.ice-content').forEach(el => { el.style.opacity = '1'; });
+      }, 1000);
     } catch (error) {
       document.getElementById('loading')?.classList.add('hidden');
       document.getElementById('results').classList.remove('hidden');
@@ -1488,7 +1499,7 @@ const InvitePage = {
       }).catch(() => {});
     }
 
-    document.getElementById('back-btn').addEventListener('click', () => Router.back());
+    document.getElementById('back-btn').addEventListener('click', () => Router.navigateTo('/home'));
 
     document.getElementById('copy-invite').addEventListener('click', () => {
       const text = document.getElementById('invite-msg').querySelector('p')?.textContent || document.getElementById('invite-msg').textContent;
@@ -1525,10 +1536,9 @@ const InvitePage = {
 const SquarePage = {
   state: { filter: 'all', keyword: '', sort: 'newest', page: 1, pageSize: 6, hasMore: true, advFilters: { time: null, budget: null, area: null, social: null } },
   render() {
-    return `<div class="bg-gray-50 min-h-screen pb-20">${renderTopNavbar('搭子广场', true, `<button id="pub-btn" class="w-8 h-8 flex items-center justify-center"><svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></button>`)}<div class="fixed top-14 left-0 right-0 bg-white border-b border-gray-200 z-40"><div class="max-w-md mx-auto px-4 flex"><button data-t="all" class="ftab flex-1 py-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500">全部</button><button data-t="lunch" class="ftab flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent flex items-center justify-center gap-1">${ICONS.bowl('w-4 h-4')}<span>午餐</span></button><button data-t="commute" class="ftab flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent flex items-center justify-center gap-1">${ICONS.car('w-4 h-4')}<span>通勤</span></button><button data-t="weekend" class="ftab flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent flex items-center justify-center gap-1">${ICONS.target('w-4 h-4')}<span>周末</span></button></div></div><main id="square-main" class="max-w-md mx-auto px-4 pt-28 pb-4"><div class="mb-3 space-y-2"><div class="search-bar"><svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="square-search" type="text" placeholder="搜索内容、用户名..." /></div><div class="flex items-center justify-between"><button id="filter-btn" class="pressable flex items-center gap-1 px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg><span>筛选</span><span id="filter-count" class="hidden ml-1 w-4 h-4 bg-orange-500 text-white rounded-full text-xs flex items-center justify-center">0</span></button><div class="sort-dropdown"><button id="sort-btn" class="pressable flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600"><span id="sort-label">最新发布</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="sort-menu" class="sort-menu"><div class="sort-menu-item active" data-sort="newest">最新发布</div><div class="sort-menu-item" data-sort="responded">响应最多</div><div class="sort-menu-item" data-sort="match">最佳匹配</div></div></div></div></div><div id="square-list" class="space-y-3">${skeletonCards(3)}</div><button id="load-more" class="load-more-btn mt-4 hidden">加载更多</button></main><div id="filter-backdrop" class="filter-backdrop"></div><div id="filter-drawer" class="filter-drawer"><div class="flex items-center justify-between mb-4"><h3 class="text-base font-semibold">筛选条件</h3><button id="filter-reset" class="text-sm text-orange-500">重置</button></div><div class="space-y-4"><div><label class="block text-sm font-medium text-gray-700 mb-2">时间范围</label><div id="fd-time" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-2">预算范围</label><div id="fd-budget" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-2">区域</label><div id="fd-area" class="flex flex-wrap gap-2"></div></div><div><label class="block text-sm font-medium text-gray-700 mb-2">社交偏好</label><div id="fd-social" class="flex flex-wrap gap-2"></div></div></div><button id="filter-apply" class="w-full h-12 bg-orange-500 text-white font-medium rounded-lg mt-6">应用筛选</button></div><nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"><div class="max-w-md mx-auto px-4 h-16 flex items-center justify-around"><a href="#/home" class="flex flex-col items-center space-y-1 tab-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="text-xs">首页</span></a><a href="#/square" class="flex flex-col items-center space-y-1 tab-item active"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span class="text-xs font-medium">广场</span></a><a href="#/profile" class="flex flex-col items-center space-y-1 tab-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg><span class="text-xs">我的</span></a></div></nav></div>`;
+    return `<div class="bg-gray-50 min-h-screen pb-20">${renderTopNavbar('搭子广场', false, `<button id="pub-btn" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--primary-gradient);box-shadow:var(--shadow-glow)"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></button>`)}<div class="fixed top-14 left-0 right-0 bg-white border-b border-gray-200 z-40"><div class="max-w-md mx-auto px-4 flex"><button data-t="all" class="ftab flex-1 py-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500">全部</button><button data-t="lunch" class="ftab flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent flex items-center justify-center gap-1">${ICONS.bowl('w-4 h-4')}<span>午餐</span></button><button data-t="commute" class="ftab flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent flex items-center justify-center gap-1">${ICONS.car('w-4 h-4')}<span>通勤</span></button><button data-t="weekend" class="ftab flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent flex items-center justify-center gap-1">${ICONS.target('w-4 h-4')}<span>周末</span></button></div></div><main id="square-main" class="max-w-md mx-auto px-4 pt-28 pb-4"><div class="mb-3 space-y-2"><div class="search-bar"><svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="square-search" type="text" placeholder="搜索内容、用户名..." /></div><div class="flex items-center justify-between relative"><button id="filter-btn" class="pressable flex items-center gap-1 px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg><span>筛选</span><span id="filter-count" class="hidden ml-1 w-4 h-4 bg-orange-500 text-white rounded-full text-xs flex items-center justify-center">0</span></button><div id="filter-drawer" class="filter-drawer"><div class="flex items-center justify-between mb-3"><h3 class="text-sm font-semibold">筛选条件</h3><button id="filter-reset" class="text-xs text-orange-500">重置</button></div><div class="space-y-3"><div><label class="block text-xs font-medium text-gray-700 mb-1.5">时间范围</label><div id="fd-time" class="flex flex-wrap gap-1.5"></div></div><div><label class="block text-xs font-medium text-gray-700 mb-1.5">预算范围</label><div id="fd-budget" class="flex flex-wrap gap-1.5"></div></div><div><label class="block text-xs font-medium text-gray-700 mb-1.5">区域</label><div id="fd-area" class="flex flex-wrap gap-1.5"></div></div><div><label class="block text-xs font-medium text-gray-700 mb-1.5">社交偏好</label><div id="fd-social" class="flex flex-wrap gap-1.5"></div></div></div><button id="filter-apply" class="w-full h-9 bg-orange-500 text-white text-sm font-medium rounded-lg mt-4">应用筛选</button></div><div class="sort-dropdown"><button id="sort-btn" class="pressable flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600"><span id="sort-label">最新发布</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="sort-menu" class="sort-menu"><div class="sort-menu-item active" data-sort="newest">最新发布</div><div class="sort-menu-item" data-sort="responded">响应最多</div><div class="sort-menu-item" data-sort="match">最佳匹配</div></div></div></div></div><div id="square-list" class="space-y-3">${skeletonCards(3)}</div><button id="load-more" class="load-more-btn mt-4 hidden">加载更多</button></main><nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"><div class="max-w-md mx-auto px-4 h-16 flex items-center justify-around"><a href="#/home" class="flex flex-col items-center space-y-1 tab-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="text-xs">首页</span></a><a href="#/square" class="flex flex-col items-center space-y-1 tab-item active"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span class="text-xs font-medium">广场</span></a><a href="#/profile" class="flex flex-col items-center space-y-1 tab-item"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg><span class="text-xs">我的</span></a></div></nav></div>`;
   },
   init() {
-    document.getElementById('back-btn').addEventListener('click', () => Router.back());
     document.getElementById('pub-btn').addEventListener('click', () => Router.navigateTo('/publish'));
     document.querySelectorAll('.ftab').forEach(b => b.addEventListener('click', (e) => {
       this.state.filter = e.currentTarget.dataset.t;
@@ -1553,7 +1563,6 @@ const SquarePage = {
       this.loadPosts();
     }));
     document.getElementById('filter-btn').addEventListener('click', () => this.openDrawer());
-    document.getElementById('filter-backdrop').addEventListener('click', () => this.closeDrawer());
     document.getElementById('filter-reset').addEventListener('click', () => { this.state.advFilters = { time: null, budget: null, area: null, social: null }; this.renderDrawerOpts(); });
     document.getElementById('filter-apply').addEventListener('click', () => { this.closeDrawer(); this.state.page = 1; this.updateFilterCount(); this.loadPosts(); });
     document.getElementById('load-more').addEventListener('click', () => { this.state.page++; this.loadPosts(true); });
@@ -1562,14 +1571,10 @@ const SquarePage = {
   },
   openDrawer() {
     this.renderDrawerOpts();
-    document.getElementById('filter-drawer').classList.add('open');
-    document.getElementById('filter-backdrop').classList.add('open');
-    document.body.style.overflow = 'hidden';
+    document.getElementById('filter-drawer').classList.toggle('open');
   },
   closeDrawer() {
     document.getElementById('filter-drawer').classList.remove('open');
-    document.getElementById('filter-backdrop').classList.remove('open');
-    document.body.style.overflow = '';
   },
   renderDrawerOpts() {
     const af = this.state.advFilters;
@@ -1647,7 +1652,7 @@ const SquarePage = {
 const ProfilePage = {
   render() {
     return `<div class="bg-gray-50 min-h-screen pb-20">
-      ${renderTopNavbar('个人中心', true, '<button id="edit-btn" class="text-sm text-orange-500 font-medium">编辑</button>')}
+      ${renderTopNavbar('个人中心', false, '<button id="edit-btn" class="text-sm text-orange-500 font-medium">编辑</button>')}
       <main class="max-w-md mx-auto px-4 pt-18 pb-4 space-y-4">
         <div class="bg-white rounded-xl shadow-sm p-6 text-center">
           <div class="profile-avatar-wrap mx-auto mb-4">
@@ -1706,7 +1711,6 @@ const ProfilePage = {
       if (profile.constellation) badges += `<span class="personality-badge constellation">⭐ ${profile.constellation}</span>`;
       tagEl.innerHTML = badges;
     }
-    document.getElementById('back-btn').addEventListener('click', () => Router.back());
     document.getElementById('edit-btn').addEventListener('click', () => showToast('编辑功能开发中'));
     const userProfile = getStorage('userProfile');
     if (userProfile && userProfile.aboutMe) {
@@ -1736,18 +1740,13 @@ const ProfilePage = {
   async loadStats() {
     try {
       const history = await getMatchHistory(1, 100);
-      if (history) {
-        const matches = history.total || 0;
-        const success = history.list ? history.list.filter(r => r.status === 'accepted').length : 0;
-        const friends = new Set(history.list ? history.list.filter(r => r.status === 'accepted').map(r => r.matchedUserId) : []).size;
-        document.getElementById('stat-matches').textContent = matches;
-        document.getElementById('stat-success').textContent = success;
-        document.getElementById('stat-friends').textContent = friends;
-      } else {
-        document.getElementById('stat-matches').textContent = '0';
-        document.getElementById('stat-success').textContent = '0';
-        document.getElementById('stat-friends').textContent = '0';
-      }
+      const list = Array.isArray(history) ? history : (history?.list || []);
+      const matches = list.length;
+      const success = list.filter(r => r.status === 'accepted').length;
+      const friends = new Set(list.filter(r => r.status === 'accepted').map(r => r.partner_id)).size;
+      document.getElementById('stat-matches').textContent = matches;
+      document.getElementById('stat-success').textContent = success;
+      document.getElementById('stat-friends').textContent = friends;
     } catch (e) {
       document.getElementById('stat-matches').textContent = '0';
       document.getElementById('stat-success').textContent = '0';
@@ -1768,21 +1767,22 @@ const ProfilePage = {
     const container = document.getElementById('my-buddies');
     try {
       const history = await getMatchHistory(1, 10);
-      if (history && history.list && history.list.length > 0) {
-        const buddies = history.list.filter(r => r.status === 'accepted').slice(0, 5);
+      const list = Array.isArray(history) ? history : (history?.list || []);
+      if (list.length > 0) {
+        const buddies = list.filter(r => r.status === 'accepted').slice(0, 5);
         if (buddies.length === 0) {
           container.innerHTML = `<div class="p-3 bg-gray-50 rounded-lg text-center"><p class="text-sm text-gray-500">还没有搭子，去匹配看看</p></div>`;
         } else {
           container.innerHTML = buddies.map(b => {
-            const typeLabel = b.type === 'lunch' ? '午餐搭子' : '拼车搭子';
-            const avatarBg = b.type === 'lunch' ? 'bg-orange-100' : 'bg-blue-100';
-            const avatarText = b.type === 'lunch' ? 'text-orange-600' : 'text-blue-600';
+            const typeLabel = b.scene === 'lunch' ? '午餐搭子' : '拼车搭子';
+            const avatarBg = b.scene === 'lunch' ? 'bg-orange-100' : 'bg-blue-100';
+            const avatarText = b.scene === 'lunch' ? 'text-orange-600' : 'text-blue-600';
             return `<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
               <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 ${avatarBg} rounded-full flex items-center justify-center"><span class="text-sm ${avatarText}">${(b.nickname || '?').charAt(0)}</span></div>
-                <div><p class="text-sm font-medium text-gray-900">${b.nickname || '搭子'} · ${typeLabel}</p><p class="text-xs text-gray-500">匹配度：${b.matchScore || '-'}%</p></div>
+                <div class="w-10 h-10 ${avatarBg} rounded-full flex items-center justify-center"><span class="text-sm ${avatarText}">${(b.partner_name || '?').charAt(0)}</span></div>
+                <div><p class="text-sm font-medium text-gray-900">${b.partner_name || '搭子'} · ${typeLabel}</p><p class="text-xs text-gray-500">匹配度：${b.score || '-'}%</p></div>
               </div>
-              <button class="view-buddy-btn text-sm text-orange-500 font-medium" data-name="${b.nickname || '搭子'}" data-id="${b.id}">查看</button>
+              <button class="view-buddy-btn text-sm text-orange-500 font-medium" data-name="${b.partner_name || '搭子'}" data-id="${b.id}">查看</button>
             </div>`;
           }).join('');
           container.querySelectorAll('.view-buddy-btn').forEach(btn => {
@@ -1808,7 +1808,7 @@ const PublishPage = {
   init() {
     const draft = getStorage('publishDraft');
     if (draft) { this.state = Object.assign({}, this.state, draft); if (!this.state.weekend) this.state.weekend = { activity: '', location: '', time: '周六 9:00', description: '' }; }
-    document.getElementById('back-btn').addEventListener('click', () => { this.saveDraft(); Router.back(); });
+    document.getElementById('back-btn').addEventListener('click', () => { this.saveDraft(); Router.navigateTo('/home'); });
     document.querySelectorAll('.tbtn').forEach(b => b.addEventListener('click', (e) => { this.state.type = e.currentTarget.dataset.t; this.updateForm(); this.saveDraft(); }));
     const descEl = document.getElementById('fdesc');
     if (descEl) {
@@ -1906,7 +1906,7 @@ const MenuPage = {
     return `<div class="bg-gray-50 min-h-screen pb-6">${renderTopNavbar('今日食堂菜单', true)}<div class="fixed top-14 left-0 right-0 bg-white border-b border-gray-200 z-40"><div class="max-w-md mx-auto px-4 flex overflow-x-auto hide-scrollbar">${tabsHtml}</div></div><main class="max-w-md mx-auto px-4 pt-28 pb-4"><div id="menu-canteens" class="flex flex-wrap gap-2 mb-3"></div><div id="menu-grid" class="space-y-3"></div><p class="text-center text-xs text-gray-400 mt-4">数据来源：科技园食堂 · 今日实时更新</p></main></div>`;
   },
   init() {
-    document.getElementById('back-btn').addEventListener('click', () => Router.back());
+    document.getElementById('back-btn').addEventListener('click', () => Router.navigateTo('/home'));
     document.querySelectorAll('.loctab').forEach(b => b.addEventListener('click', (e) => {
       this.state.location = e.currentTarget.dataset.loc;
       this.state.canteen = 'all';
@@ -1978,7 +1978,7 @@ const DailyPage = {
     </main></div>`;
   },
   init() {
-    document.getElementById('back-btn').addEventListener('click', () => Router.back());
+    document.getElementById('back-btn').addEventListener('click', () => Router.navigateTo('/home'));
     document.getElementById('refresh-daily').addEventListener('click', () => this.loadRecommendation(true));
     this.state = { menuFilter: 'all', fortuneRevealed: false, recommendationIndex: 0 };
     this.initFortuneCards();
@@ -2174,10 +2174,9 @@ const NotificationPage = {
       ? `<div class="flex justify-end"><button id="ann-more-btn" class="text-xs text-orange-500">查看更多</button></div>`
       : '';
     const invHtml = this._invitations.map(inv => this._renderInv(inv)).join('');
-    return `<div class="bg-gray-50 min-h-screen">${renderTopNavbar('消息通知', true)}<main class="max-w-md mx-auto px-4 pt-18 pb-4 space-y-4"><div class="flex items-center justify-between"><h2 class="text-sm font-semibold text-gray-500 flex items-center gap-1.5"><svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg><span>系统公告</span></h2><button id="read-all-btn" class="text-xs text-gray-400">全部已读</button></div>${annHtml}${moreBtn}<div class="flex items-center justify-between mt-4"><h2 class="text-sm font-semibold text-gray-500 flex items-center gap-1.5"><svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span>邀请消息</span></h2><button id="ignore-all-btn" class="text-xs text-gray-400">全部忽略</button></div>${invHtml}</main></div>`;
+    return `<div class="bg-gray-50 min-h-screen">${renderTopNavbar('消息通知', false)}<main class="max-w-md mx-auto px-4 pt-18 pb-4 space-y-4"><div class="flex items-center justify-between"><h2 class="text-sm font-semibold text-gray-500 flex items-center gap-1.5"><svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg><span>系统公告</span></h2><button id="read-all-btn" class="text-xs text-gray-400">全部已读</button></div>${annHtml}${moreBtn}<div class="flex items-center justify-between mt-4"><h2 class="text-sm font-semibold text-gray-500 flex items-center gap-1.5"><svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span>邀请消息</span></h2><button id="ignore-all-btn" class="text-xs text-gray-400">全部忽略</button></div>${invHtml}</main></div>`;
   },
   init() {
-    document.getElementById('back-btn').addEventListener('click', () => Router.back());
     // 查看更多公告 → 弹窗
     const moreBtn = document.getElementById('ann-more-btn');
     if (moreBtn) {
@@ -2391,20 +2390,23 @@ const AIAssistant = {
     const onMove = (e) => {
       if (!dragging) return;
       const pos = e.touches ? e.touches[0] : e;
-      const dx = startX - pos.clientX;
-      const dy = pos.clientY - startY;
+      const dx = pos.clientX - startX;
+      const dy = startY - pos.clientY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
-      const newRight = Math.max(0, Math.min(window.innerWidth - 60, origRight + dx));
+      const newRight = Math.max(0, Math.min(window.innerWidth - 60, origRight - dx));
       const newBottom = Math.max(0, Math.min(window.innerHeight - 60, origBottom + dy));
       fab.style.right = newRight + 'px';
       fab.style.bottom = newBottom + 'px';
       if (this.isOpen) this.syncWindowPosition();
       e.preventDefault();
     };
-    const onEnd = () => {
+    const onEnd = (e) => {
+      if (!dragging) return; // 不是从 fab 开始的拖拽，忽略
       dragging = false;
       fab.style.transition = '';
-      if (!moved) this.toggle();
+      if (!moved) {
+        this.toggle();
+      }
     };
     fab.addEventListener('mousedown', onStart);
     document.addEventListener('mousemove', onMove);
@@ -2863,8 +2865,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <span class="sidebar-label">收起</span>
       </div>
     </div>
-  </aside>
-  <button class="sidebar-toggle" id="sidebar-toggle"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>`;
+  </aside>`;
   document.body.insertAdjacentHTML('afterbegin', sidebarHtml);
 
   // 侧边栏折叠/展开
@@ -2874,7 +2875,6 @@ document.addEventListener('DOMContentLoaded', function() {
     localStorage.setItem('mimeet_sidebar_collapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
   };
   document.getElementById('sidebar-collapse-btn').addEventListener('click', toggleSidebar);
-  document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
   if (localStorage.getItem('mimeet_sidebar_collapsed') === '1') sidebar.classList.add('collapsed');
 
   // 侧边栏消息未读数

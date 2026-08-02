@@ -7,7 +7,7 @@
  * 仅当 NODE_ENV !== 'production' 时生效,并要求 .env 里 ALLOW_DEV_AUTH=1。
  * 前端联调用: fetch('/api/user/getProfile?dev=u001')
  */
-const { pool } = require('../../database/mock-db');
+const { pool } = require('../../database');
 
 const cache = new Map(); // uid -> {feishu_id, nickname, avatar_url, department, seat_number}
 

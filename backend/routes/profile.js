@@ -2,7 +2,7 @@
  * 用户画像 API
  */
 const express = require('express');
-const { pool } = require('../../database/db');
+const { pool } = require('../../database');
 const { understandProfile, generateBadge } = require('../services/mimo');
 const axios = require('axios');
 const router = express.Router();

@@ -4,7 +4,7 @@
  * - 菜单同步（TODO: 待接入米宴接口）
  */
 const schedule = require('node-schedule');
-const { pool } = require('../database/mock-db');
+const { pool } = require('../database');
 
 function startScheduler() {
   // 每小时检查一次，将超过24小时的广场帖子标记为 expired

@@ -8,7 +8,7 @@
  * 缓存策略: 同一用户同一天只调一次 MiMo,复用 daily_recommend 表
  */
 const express = require('express');
-const { pool } = require('../../database/mock-db');
+const { pool } = require('../../database');
 const router = express.Router();
 
 const FALLBACK_POOL = [

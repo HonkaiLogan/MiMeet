@@ -7,7 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
-const { initDB } = require('../database/mock-db');
+const { initDB } = require('../database');
 const { startScheduler } = require('./scheduler');
 
 const app = express();

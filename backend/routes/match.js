@@ -2,7 +2,7 @@
  * 匹配 API
  */
 const express = require('express');
-const { pool } = require('../../database/db');
+const { pool } = require('../../database');
 const { doMatch, buildFallbackIcebreakerPublic } = require('../services/matching');
 const { generateLunchIcebreaker, generateCommuteIcebreaker } = require('../services/mimo');
 const router = express.Router();

@@ -6,7 +6,7 @@
 // ============ 内存存储 ============
 const store = {
   users: [
-    { id: 1, feishu_id: 'seed_u001', nickname: '小米同学', department: '中国区-新零售部', seat_number: '北京科技园-A幢-8F-023', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '天秤座', badge: '' },
+    { id: 1, feishu_id: 'seed_u001', nickname: '小米同学', department: '中国区-新零售部', seat_number: '北京科技园-A幢-8F-023', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '天秤座', badge: '峰顶麦霸' },
     { id: 2, feishu_id: 'seed_u002', nickname: '吴同学', department: '人力资源部', seat_number: '北京科技园-B幢-5F-112', avatar_url: '', join_date: '2025-07-01', role: '校招生', zodiac: '巨蟹座' },
     { id: 3, feishu_id: 'seed_u003', nickname: '李同学', department: '手机部-硬件工程部', seat_number: '北京科技园-C幢-12F-045', avatar_url: '', join_date: '2024-07-01', role: '社招', zodiac: '摩羯座' },
     { id: 4, feishu_id: 'seed_u004', nickname: '王同学', department: '手机部-新业务部', seat_number: '北京科技园-D幢-3F-078', avatar_url: '', join_date: '2026-04-01', role: '校招生', zodiac: '双鱼座' },
@@ -32,8 +32,8 @@ const store = {
     { id: 14, user_id: 8, scene: 'lunch', taste_pref: '["轻食","西餐"]', time_pref: '12:00', location_pref: '楼下商圈', budget: '40-60', social_pref: '轻松聊天', interests: '["设计","音乐","摄影"]', commute_area: '', commute_time: '', transport: '' },
   ],
   matches: [
-    { id: 1, user_a_id: 1, user_b_id: 2, scene: 'lunch', score: 92, reason: '你们都偏好清淡口味，午餐时间相近', common_tags: '["清淡口味","12:30午餐","AI爱好者"]', icebreaker: '{"inviteMessage":"一起吃个饭吧~","icebreakerTopics":["最近在用什么AI工具","周末有什么安排"]}', feedback_a: 5, feedback_b: null, status: 'sent' },
-    { id: 2, user_a_id: 1, user_b_id: 5, scene: 'commute', score: 95, reason: '你们都住在回龙观，路线重合度高', common_tags: '["回龙观","打车"]', icebreaker: '{"inviteMessage":"一起拼车吧~","icebreakerTopics":["每天几点出发","用什么打车软件"]}', feedback_a: null, feedback_b: null, status: 'pending' },
+    { id: 1, user_a_id: 1, user_b_id: 2, scene: 'lunch', score: 92, reason: '你们都偏好清淡口味，午餐时间相近', common_tags: '["清淡口味","12:30午餐","AI爱好者"]', icebreaker: '{"inviteMessage":"一起吃个饭吧~","icebreakerTopics":["最近在用什么AI工具","周末有什么安排"]}', feedback_a: 5, feedback_b: null, status: 'accepted' },
+    { id: 2, user_a_id: 1, user_b_id: 5, scene: 'commute', score: 95, reason: '你们都住在回龙观，路线重合度高', common_tags: '["回龙观","打车"]', icebreaker: '{"inviteMessage":"一起拼车吧~","icebreakerTopics":["每天几点出发","用什么打车软件"]}', feedback_a: null, feedback_b: null, status: 'accepted' },
     { id: 3, user_a_id: 1, user_b_id: 3, scene: 'lunch', score: 85, reason: '午餐时间一致，都对技术感兴趣', common_tags: '["12:00午餐","米饭爱好者"]', icebreaker: '{"inviteMessage":"中午一起吃饭？","icebreakerTopics":["最近在研究什么技术"]}', feedback_a: 4, feedback_b: null, status: 'sent' },
   ],
   square_posts: [
@@ -118,18 +118,15 @@ function handleSelect(sql, params) {
     let results = [...store.users];
 
     // WHERE 条件
-    if (sql.includes('WHERE')) {
-      if (sql.includes('feishu_id = ?')) {
-        const idx = paramIndex(sql, 'feishu_id = ?');
-        results = results.filter(u => u.feishu_id === params[idx]);
+    if (upperSql.includes('WHERE')) {
+      // feishu_id 查询 - 直接用第一个参数
+      if (sql.includes('feishu_id') && params.length > 0) {
+        const val = params[0];
+        results = results.filter(u => u.feishu_id === val);
       }
-      if (sql.includes('u.feishu_id = ?')) {
-        const idx = paramIndex(sql, 'u.feishu_id = ?');
-        results = results.filter(u => u.feishu_id === params[idx]);
-      }
-      if (sql.includes('id = ?') && !sql.includes('user_id')) {
-        const idx = paramIndex(sql, 'id = ?');
-        results = results.filter(u => u.id === Number(params[idx]));
+      // id 查询
+      else if (sql.includes('id = ?') && !sql.includes('user_id') && params.length > 0) {
+        results = results.filter(u => u.id === Number(params[0]));
       }
     }
 
@@ -216,6 +213,10 @@ function handleSelect(sql, params) {
       const enriched = results.map(m => {
         const partnerId = m.user_a_id === uid ? m.user_b_id : m.user_a_id;
         const partner = store.users.find(u => u.id === partnerId);
+        let icebreaker = m.icebreaker;
+        if (typeof icebreaker === 'string') {
+          try { icebreaker = JSON.parse(icebreaker); } catch { icebreaker = {}; }
+        }
         return {
           id: m.id,
           scene: m.scene,
@@ -227,6 +228,7 @@ function handleSelect(sql, params) {
           user_a_id: m.user_a_id,
           partner_id: partnerId,
           partner_name: partner ? partner.nickname : '未知',
+          icebreaker: icebreaker || {},
         };
       });
 
